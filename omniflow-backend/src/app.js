@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';   // ← Added Day 3 (reads HttpOnly refresh token cookie)
 import config from './config/index.js';
 import router from './routes/index.js';
+import globalErrorHandler from './middlewares/error.middleware.js';
 
 const app = express();
 
@@ -56,13 +57,6 @@ app.all('/{*splat}', (req, res) => {
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
 // Receives errors from: catchAsync, throw new AppError(), next(err)
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    status: err.status || 'error',
-    message: err.message || 'Something went wrong',
-    ...(config.nodeEnv === 'development' && { stack: err.stack }),
-  });
-});
+app.use(globalErrorHandler);
 
 export default app;
