@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';  // We'll install this on Day 3 — add the import now
+import bcrypt from 'bcryptjs';  // Installed on Day 3 — bcryptjs is the pure JS version
 
 const userSchema = new mongoose.Schema(
     {
