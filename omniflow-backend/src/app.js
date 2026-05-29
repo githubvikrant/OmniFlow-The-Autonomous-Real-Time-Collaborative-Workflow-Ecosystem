@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';   // ← Added Day 3 (reads HttpOnly r
 import config from './config/index.js';
 import router from './routes/index.js';
 import globalErrorHandler from './middlewares/error.middleware.js';
+import { initializePassport } from './middlewares/passport.middleware.js'; // ← Added Day 5
 
 const app = express();
 
@@ -33,6 +34,12 @@ app.use(cookieParser());
 if (!config.isProduction) {
   app.use(morgan('dev'));  // GET /api/v1/auth/login 200 8ms
 }
+
+// ─── Passport (Day 5) ────────────────────────────────────────────────────────
+// Initializes passport in stateless mode (no sessions).
+// Must come AFTER body parsers but BEFORE routes, so that
+// passport.authenticate() middleware on the Google routes works correctly.
+app.use(initializePassport());
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/v1', router);
