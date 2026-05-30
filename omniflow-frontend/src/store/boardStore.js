@@ -20,7 +20,7 @@ export const useBoardStore = create((set, get) => ({
       // Parallel fetch for speed
       const [boardRes, tasksRes] = await Promise.all([
         api.get(`/boards/${boardId}`),
-        api.get(`/boards/${boardId}/tasks`)
+        api.get(`/tasks?board=${boardId}`)
       ]);
       
       set({ 

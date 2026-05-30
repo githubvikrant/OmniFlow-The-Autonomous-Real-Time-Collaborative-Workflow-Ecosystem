@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useBoardStore } from '@/store/boardStore';
 import BoardView from '@/components/board/BoardView';
 import Button from '@/components/ui/Button';
+import api from '@/lib/axios';
 
 export default function BoardPage() {
   const { id } = useParams();
@@ -40,6 +41,19 @@ export default function BoardPage() {
           </span>
         </div>
         <div className="board-header__right">
+          <Button variant="secondary" onClick={async () => {
+            try {
+              await api.post('/tasks', {
+                board: activeBoard._id,
+                title: 'Test Task ' + Math.floor(Math.random() * 1000),
+                column: 'To Do',
+                priority: 'medium'
+              });
+              fetchBoardData(activeBoard._id);
+            } catch (err) {
+              console.error('Failed to create task', err);
+            }
+          }}>+ Add Dummy Task</Button>
           <Button variant="secondary">Share</Button>
           <Button variant="primary">✨ AI Generate</Button>
         </div>
