@@ -174,7 +174,7 @@ function LoginForm() {
           label="Email address"
           id="email"
           type="email"
-          autoComplete="email"
+          autoComplete="username"
           placeholder="you@example.com"
           error={errors.email}
           {...register('email')}
