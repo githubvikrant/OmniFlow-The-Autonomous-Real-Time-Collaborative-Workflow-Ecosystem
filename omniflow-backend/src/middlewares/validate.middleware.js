@@ -20,7 +20,7 @@ const validate = (schema) => (req, res, next) => {
   if (!result.success) {
     // Format Zod errors into a readable message
     // e.g. "email: Please provide a valid email address; password: ..."
-    const messages = result.error.errors
+    const messages = result.error.issues
       .map((e) => `${e.path.join('.')}: ${e.message}`)
       .join('; ');
 
