@@ -318,23 +318,43 @@ p {
   margin-top: var(--space-1);
 }
 
-/* ─── 6. Auth Layout ─────────────────────────────────────────────────────────
- *
- * Split-panel layout for login and register pages:
- *
- *   ┌──────────────────┬─────────────────────────┐
- *   │   LEFT PANEL     │     RIGHT PANEL          │
- *   │   (dark brand)   │     (auth form)          │
- *   │                  │                          │
- *   │  OmniFlow        │   Sign in to OmniFlow   │
- *   │  Tagline         │   [Email]               │
- *   │  Features list   │   [Password]            │
- *   │                  │   [Button]              │
- *   └──────────────────┴─────────────────────────┘
- *
- * On mobile (< 768px): left panel hides, form takes full width.
- */
+/* ─── 6. Auth Page Layout (full-screen, no side panel) ─────────────────────*/
 
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+}
+
+/* Minimal top bar with logo */
+.auth-page__header {
+  padding: var(--space-5) var(--space-8);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.auth-page__logo {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.03em;
+}
+
+.auth-page__logo span {
+  color: var(--color-accent);
+}
+
+/* Vertically + horizontally centered content area */
+.auth-page__main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10) var(--space-5);
+}
+
+/* ─── Legacy split-panel (unused now) ────────────────────────────────*/
 .auth-layout {
   display: flex;
   min-height: 100vh;
@@ -406,11 +426,14 @@ p {
 /* The form card */
 .auth-form-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
 .auth-form-card__header {
-  margin-bottom: var(--space-8);
+  /* spacing handled by parent gap */
 }
 
 .auth-form-card__title {
@@ -435,6 +458,14 @@ p {
   text-decoration: underline;
 }
 
+/* Footer divider below the form — used for register/login switch link */
+.auth-form-card__footer {
+  padding-top: var(--space-5);
+  margin-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+}
+
 /* The form itself */
 .auth-form {
   display: flex;
@@ -447,7 +478,6 @@ p {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin: var(--space-1) 0;
 }
 
 .auth-divider::before,
@@ -474,6 +504,17 @@ p {
   padding: var(--space-3) var(--space-4);
   font-size: var(--font-size-sm);
   color: var(--color-error);
+  line-height: 1.5;
+}
+
+/* Success banner — shown after registration redirect */
+.auth-success-banner {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
   line-height: 1.5;
 }
 

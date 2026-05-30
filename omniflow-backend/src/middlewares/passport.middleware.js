@@ -35,10 +35,9 @@ import config from '../config/index.js';
 
 // ─── Configure the Google OAuth Strategy ─────────────────────────────────────
 
-// Only register the strategy if credentials are actually configured.
-// During development before you fill in the .env, the server still starts —
-// the Google OAuth routes just won't work until credentials are added.
-if (config.google.clientId && config.google.clientId !== 'your-google-client-id-here') {
+// Register the strategy only when both credentials are present.
+// Simple truthy check — no brittle hardcoded placeholder strings.
+if (config.google.clientId && config.google.clientSecret) {
   passport.use(
     new GoogleStrategy(
       {
@@ -118,12 +117,12 @@ if (config.google.clientId && config.google.clientId !== 'your-google-client-id-
       }
     )
   );
+  console.log('✅ Google OAuth strategy registered');
 } else {
   // Credentials not configured yet — log a clear message so the developer knows
   console.warn(
     '⚠️  Google OAuth credentials not configured. ' +
-    'Fill in GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env to enable Google sign-in. ' +
-    'See Day_5_Tasks.md for step-by-step setup instructions.'
+    'Fill in GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env to enable Google sign-in.'
   );
 }
 

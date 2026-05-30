@@ -123,10 +123,9 @@ export default function RegisterPage() {
 
       {/* Header */}
       <div className="auth-form-card__header">
-        <h1 className="auth-form-card__title">Create your account</h1>
+        <h1 className="auth-form-card__title">Create account</h1>
         <p className="auth-form-card__subtitle">
-          Already have an account?{' '}
-          <Link href="/login">Sign in</Link>
+          Start using OmniFlow for free
         </p>
       </div>
 
@@ -212,9 +211,13 @@ export default function RegisterPage() {
         </Button>
       </form>
 
-      <p className="auth-oauth-notice">
-        By creating an account you agree to our Terms of Service and Privacy Policy.
-      </p>
+      {/* Login link — clearly separated at the bottom */}
+      <div className="auth-form-card__footer">
+        <p className="auth-form-card__subtitle">
+          Already have an account?{' '}
+          <Link href="/login">Sign in &rarr;</Link>
+        </p>
+      </div>
 
     </div>
   );

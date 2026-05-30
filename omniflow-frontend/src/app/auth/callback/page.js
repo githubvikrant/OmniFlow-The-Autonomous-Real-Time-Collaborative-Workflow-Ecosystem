@@ -27,11 +27,11 @@
  *   so this page only runs on success. But we still guard against a missing token.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setAccessToken } from '@/lib/auth';
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('Processing...');
@@ -63,5 +63,18 @@ export default function AuthCallbackPage() {
       <div className="btn__spinner" style={{ width: 24, height: 24, borderWidth: 3 }} />
       <p className="dashboard-placeholder__desc">{status}</p>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="dashboard-placeholder">
+        <div className="btn__spinner" style={{ width: 24, height: 24, borderWidth: 3 }} />
+        <p className="dashboard-placeholder__desc">Loading...</p>
+      </div>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }

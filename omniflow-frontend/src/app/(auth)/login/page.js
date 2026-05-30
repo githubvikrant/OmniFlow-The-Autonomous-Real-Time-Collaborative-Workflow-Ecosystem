@@ -23,8 +23,8 @@
  *   or explicit trigger. Much faster in forms with many fields.
  */
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,9 +75,15 @@ function GoogleIcon() {
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [apiError, setApiError] = useState(null);
+
+  // Show success banner when redirected from /register
+  const justRegistered = searchParams.get('registered') === 'true';
+  // Show error banner when Google OAuth failed
+  const oauthError = searchParams.get('error') === 'google_auth_failed';
 
   const {
     register,
@@ -90,26 +96,23 @@ export default function LoginPage() {
 
   // ── Form submit handler ───────────────────────────────────────────────────
   const onSubmit = async (data) => {
-    setApiError(null); // Clear any previous error
+    setApiError(null);
 
     try {
       const response = await api.post('/auth/login', data);
-      // Store the access token in module-level memory (XSS-safe)
-      // The refresh token is set as an HttpOnly cookie by the server
       setAccessToken(response.data.accessToken);
       router.push('/dashboard');
     } catch (err) {
-      // Extract the server's error message if available
-      const message =
-        err.response?.data?.message ||
-        'Unable to sign in. Please check your connection and try again.';
+      const serverMsg = err.response?.data?.message || '';
+      // Give a helpful hint if the account was created via Google OAuth
+      const message = serverMsg.includes('Invalid email or password')
+        ? 'Incorrect email or password. If you signed up with Google, use "Continue with Google" instead.'
+        : serverMsg || 'Unable to sign in. Please try again.';
       setApiError(message);
     }
   };
 
   // ── Google OAuth click ────────────────────────────────────────────────────
-  // This is NOT an API call — it's a browser navigation to the backend.
-  // The backend redirects to Google's consent screen. No CORS needed.
   const handleGoogleLogin = () => {
     window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/google`;
   };
@@ -120,17 +123,26 @@ export default function LoginPage() {
 
       {/* Header */}
       <div className="auth-form-card__header">
-        <h1 className="auth-form-card__title">Sign in to OmniFlow</h1>
-        <p className="auth-form-card__subtitle">
-          Don&apos;t have an account?{' '}
-          <Link href="/register">Create one for free</Link>
-        </p>
+        <h1 className="auth-form-card__title">Sign in</h1>
+        <p className="auth-form-card__subtitle">Welcome back to OmniFlow</p>
       </div>
 
-      {/* API-level error (wrong credentials, server down, etc.) */}
+      {/* Success banner — shown after successful registration */}
+      {justRegistered && (
+        <div className="auth-success-banner">
+          ✓ Account created! Sign in below.
+        </div>
+      )}
+
+      {/* OAuth error banner */}
+      {oauthError && (
+        <FormError message="Google sign-in failed. Please try again or use email and password." />
+      )}
+
+      {/* API-level error */}
       <FormError message={apiError} />
 
-      {/* Google OAuth button — above the form, as it's the faster path */}
+      {/* Google OAuth button — above the form, as it’s the faster path */}
       <Button
         id="btn-google-login"
         variant="ghost"
@@ -189,6 +201,23 @@ export default function LoginPage() {
         </Button>
       </form>
 
+      {/* Register link — clearly separated at the bottom */}
+      <div className="auth-form-card__footer">
+        <p className="auth-form-card__subtitle">
+          Don&apos;t have an account?{' '}
+          <Link href="/register">Create one for free &rarr;</Link>
+        </p>
+      </div>
+
     </div>
+  );
+}
+
+// Suspense boundary required by Next.js App Router when using useSearchParams
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="auth-form-card" />}>
+      <LoginForm />
+    </Suspense>
   );
 }

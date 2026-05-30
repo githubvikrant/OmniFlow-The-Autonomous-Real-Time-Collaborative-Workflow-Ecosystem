@@ -115,6 +115,8 @@ userSchema.pre('save', async function () {
 // ─── Instance Methods ─────────────────────────────────────────────────────────
 // Check if the provided password matches the hashed one in the DB
 userSchema.methods.comparePassword = async function (candidatePassword) {
+    // If user has no password (e.g. registered via OAuth only)
+    if (!this.password) return false;
     return bcrypt.compare(candidatePassword, this.password);
 };
 
