@@ -1,90 +1,207 @@
+/**
+ * boardStore.js — Central data store for the Kanban board
+ *
+ * WHAT THIS STORE MANAGES:
+ *   - `activeBoard`: The board object currently being viewed (name, columns, etc.)
+ *   - `tasks`: All tasks for the active board in a FLAT array
+ *   - `isLoading`: True while the initial board data is being fetched
+ *   - `error`: Error message if the board fails to load
+ *   - `taskDrawer`: State for the Create/Edit task slide-in panel
+ *
+ * WHY FLAT TASKS ARRAY (not nested by column)?
+ *   We store all tasks in one flat array instead of { "To Do": [...], "In Progress": [...] }.
+ *   Reason: Drag-and-drop moves tasks between columns. With a flat array, we just update
+ *   one task's `column` field — no complex object mutation. The UI groups tasks by column
+ *   at render time using `.filter(t => t.column === col)`.
+ *
+ * OPTIMISTIC UI PATTERN (in moveTask):
+ *   When a card is dragged:
+ *   1. We INSTANTLY update the local state (zero latency, feels snappy)
+ *   2. We fire the API call in the background
+ *   3. If the API succeeds → great, we're done
+ *   4. If the API fails → we roll back to `previousTasks` and show a toast
+ *
+ *   This is the same pattern Linear, Jira, and Notion use for drag-and-drop.
+ *
+ * DRAWER STATE (openTaskDrawer / closeTaskDrawer):
+ *   Stored in Zustand (not local component state) so that ANY component
+ *   can open the task drawer. Example: the "+ Add Task" button in a column
+ *   opens the drawer in CREATE mode. The task card opens it in EDIT mode.
+ *   Both update the same Zustand state — the drawer component just reads it.
+ */
+
 import { create } from 'zustand';
 import api from '@/lib/axios';
+import { useToastStore } from '@/store/toastStore';
 
-/**
- * Global Board Store
- * 
- * Manages the current active board, its tasks, and handles optimistic
- * UI updates for drag-and-drop operations.
- */
 export const useBoardStore = create((set, get) => ({
-  activeBoard: null,
-  tasks: [],
-  isLoading: true,
-  error: null,
+  // ─── State ────────────────────────────────────────────────────────────────
+  activeBoard: null, // The full board object from the API
+  tasks: [],         // Flat array of all tasks for this board
+  isLoading: true,   // True on first load (shows loading spinner)
+  error: null,       // Error message if something goes wrong
 
-  // Load a board and its tasks from the API
+  /**
+   * Drawer state — controls the Create/Edit task panel visibility.
+   * `task: null` means CREATE mode (empty form).
+   * `task: {...}` means EDIT mode (pre-filled form).
+   * `targetColumn: "To Do"` pre-selects a column in create mode.
+   */
+  taskDrawer: {
+    isOpen: false,
+    task: null,
+    targetColumn: null,
+  },
+
+  // ─── Drawer Actions ────────────────────────────────────────────────────────
+  /**
+   * openTaskDrawer(task, targetColumn)
+   * Opens the drawer. Called by:
+   * - Task card click → passes the task object (EDIT mode)
+   * - "+ Add Task" column button → passes null, "To Do" (CREATE mode)
+   * - "+ Add Task" header button → passes null, null (CREATE mode, first column)
+   */
+  openTaskDrawer: (task = null, targetColumn = null) =>
+    set({ taskDrawer: { isOpen: true, task, targetColumn } }),
+
+  /** Closes the drawer and resets all drawer state */
+  closeTaskDrawer: () =>
+    set({ taskDrawer: { isOpen: false, task: null, targetColumn: null } }),
+
+  // ─── Data Actions ─────────────────────────────────────────────────────────
+  /**
+   * fetchBoardData(boardId)
+   * Loads the board and its tasks from the API in parallel.
+   * Called on initial page load AND after creating/updating a task
+   * to ensure the UI reflects the latest server state.
+   *
+   * Parallel fetch with Promise.all:
+   *   Both requests start at the same time → total time = max(boardTime, tasksTime)
+   *   vs sequential → total time = boardTime + tasksTime
+   */
   fetchBoardData: async (boardId) => {
-    set({ isLoading: true, error: null });
+    // Only show the loading spinner if this is the first load
+    // Prevents the entire board from flashing when refreshing after a task update
+    const isFirstLoad = !get().activeBoard || get().activeBoard._id !== boardId;
+    if (isFirstLoad) {
+      set({ isLoading: true, error: null });
+    } else {
+      set({ error: null });
+    }
     try {
-      // Parallel fetch for speed
       const [boardRes, tasksRes] = await Promise.all([
-        api.get(`/boards/${boardId}`),
-        api.get(`/tasks?board=${boardId}`)
+        api.get(`/boards/${boardId}`),        // GET /api/v1/boards/:id
+        api.get(`/tasks?board=${boardId}`),   // GET /api/v1/tasks?board=:id
       ]);
-      
-      set({ 
+
+      set({
         activeBoard: boardRes.data.data.board,
-        // Sort tasks by their 'order' field to ensure correct initial rendering
+        // Sort by `order` field to ensure cards appear in the correct sequence
         tasks: tasksRes.data.data.tasks.sort((a, b) => a.order - b.order),
-        isLoading: false 
+        isLoading: false,
       });
     } catch (error) {
-      set({ 
-        error: error.response?.data?.message || 'Failed to load board', 
-        isLoading: false 
+      set({
+        error: error.response?.data?.message || 'Failed to load board',
+        isLoading: false,
       });
     }
   },
 
-  // Optimistic drag-and-drop handler
-  moveTask: async (taskId, newColumn, newOrder, newIndexInColumn) => {
-    const { tasks, activeBoard } = get();
-    
-    // 1. Take a snapshot of the current state for rollback
+  /**
+   * moveTask(taskId, newColumn, newOrder)
+   *
+   * THE OPTIMISTIC UPDATE PATTERN:
+   *
+   * Step 1 — Snapshot: Save the current tasks array for rollback.
+   * Step 2 — Optimistic: Immediately update local state so the UI
+   *           feels instant. The card appears in its new column instantly.
+   * Step 3 — API: Fire the PATCH request in the background.
+   *           The user doesn't wait for this — they've already seen the move.
+   * Step 4a — If API succeeds: Nothing more to do. State is already updated.
+   * Step 4b — If API fails: Restore the snapshot (card snaps back) + show toast.
+   */
+  moveTask: async (taskId, newColumn, newOrder) => {
+    const { tasks } = get();
+
+    // Step 1: Snapshot for rollback
     const previousTasks = [...tasks];
-    
-    // 2. Optimistically update local state
+
+    // Step 2: Find the task being moved
     const taskIndex = tasks.findIndex(t => t.id === taskId || t._id === taskId);
     if (taskIndex === -1) return;
-    
-    const taskToMove = { ...tasks[taskIndex], column: newColumn };
-    
-    // Remove task from its old position
-    const newTasks = tasks.filter((_, idx) => idx !== taskIndex);
-    
-    // Insert task at its new position among other tasks in that column
-    // Since 'tasks' is a flat array, we just need to append it and then re-sort
-    // Actually, setting its 'order' and 'column' is enough for the UI to re-render it correctly
-    // if the UI groups and sorts by column and order.
-    taskToMove.order = newOrder;
-    
-    // Shift the order of other tasks in the target column if necessary
-    const updatedTasks = newTasks.map(t => {
+
+    const movedTask = { ...tasks[taskIndex] };
+
+    // Remove the task from its current position
+    const tasksWithoutMoved = tasks.filter((_, idx) => idx !== taskIndex);
+
+    // Update the moved task with its new column and order
+    movedTask.column = newColumn;
+    movedTask.order = newOrder;
+
+    // Shift the order of all tasks in the target column that are at or after
+    // the new position. This prevents two tasks from having the same order value.
+    const updatedOtherTasks = tasksWithoutMoved.map(t => {
       if (t.column === newColumn && t.order >= newOrder) {
         return { ...t, order: t.order + 1 };
       }
       return t;
     });
-    
-    updatedTasks.push(taskToMove);
-    
-    set({ tasks: updatedTasks });
 
-    // 3. Fire API request
+    // Add the moved task back to the flat array
+    updatedOtherTasks.push(movedTask);
+
+    // Apply the optimistic update immediately — UI re-renders now
+    set({ tasks: updatedOtherTasks });
+
+    // Step 3: Send the change to the server
     try {
       await api.post(`/tasks/${taskId}/move`, {
         targetColumn: newColumn,
-        newOrder: newOrder
+        newOrder: newOrder,
       });
+      // Success — server confirmed the move. Nothing to do.
     } catch (error) {
-      // 4. Rollback on failure
-      console.error('Optimistic update failed, rolling back...', error);
+      // Step 4b: Roll back to previous state
       set({ tasks: previousTasks });
-      // Here we could also trigger a toast notification system
+
+      // Show error toast — this is how the user knows the move failed
+      useToastStore.getState().addToast(
+        error.response?.data?.message || 'Failed to move task. Changes reverted.',
+        'error'
+      );
     }
   },
 
-  // Clear store when leaving the board page
-  clearBoard: () => set({ activeBoard: null, tasks: [], isLoading: true, error: null }),
+  /**
+   * Local state updaters for immediate UI feedback.
+   * Prevents needing to refetch the entire board after every small edit.
+   */
+  addTaskLocally: (task) => {
+    set((state) => ({ tasks: [...state.tasks, task] }));
+  },
+
+  updateTaskLocally: (taskId, updates) => {
+    set((state) => ({
+      tasks: state.tasks.map((t) => 
+        (t.id === taskId || t._id === taskId) ? { ...t, ...updates } : t
+      )
+    }));
+  },
+
+  deleteTaskLocally: (taskId) => {
+    set((state) => ({
+      tasks: state.tasks.filter((t) => t.id !== taskId && t._id !== taskId)
+    }));
+  },
+
+  /**
+   * clearBoard()
+   * Called when the user navigates away from the board page.
+   * Resets all board state so the next board loads fresh without
+   * showing stale data from the previous board.
+   */
+  clearBoard: () =>
+    set({ activeBoard: null, tasks: [], isLoading: true, error: null }),
 }));

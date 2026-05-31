@@ -48,7 +48,7 @@ export default function DashboardPage() {
         <div className="dashboard-loading">Loading boards...</div>
       ) : boards.length === 0 ? (
         <div className="dashboard-empty">
-          <p>You don't have any boards yet.</p>
+          <p>You don&apos;t have any boards yet.</p>
           <Button variant="secondary" onClick={handleCreateBoard}>
             Create your first board
           </Button>

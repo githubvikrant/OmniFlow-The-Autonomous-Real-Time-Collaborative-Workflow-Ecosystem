@@ -1,98 +1,244 @@
 /*
  * globals.css — OmniFlow Frontend Design System
+ * Day 7: UI Polish & Component Architecture
  *
- * Philosophy: "Human-built, not AI-generated."
- * Inspired by Linear.app, Vercel Dashboard, and Notion.
+ * ARCHITECTURE:
+ *   All colors, sizes, and spacing are CSS Custom Properties (variables).
+ *   Components NEVER use raw hex values — always a --variable.
  *
- * Rules we follow:
- *   1. One accent color (blue). Not five.
- *   2. Mostly white and light gray. Backgrounds don't compete with content.
- *   3. No gradients, no glassmorphism, no shadow theatrics.
- *   4. Typography does the heavy lifting — spacing and size, not color.
- *   5. Hover/focus states are subtle: a border color shift, not a glow.
+ * DARK MODE:
+ *   Dark mode works via a [data-theme="dark"] attribute on <html>.
+ *   ThemeProvider.js sets this attribute based on localStorage.
+ *   No JavaScript is needed to change colors — just the attribute swap.
+ *   Pattern: :root defines defaults (light mode).
+ *             [data-theme="dark"] overrides the same variables.
  *
- * Structure:
- *   1. CSS custom properties (design tokens)
- *   2. CSS reset
- *   3. Base element styles
- *   4. Button component
- *   5. FormField / Input component
- *   6. Auth-specific layout
- *   7. Dashboard placeholder
+ * STRUCTURE:
+ *   1.  CSS Custom Properties — light mode defaults
+ *   2.  CSS Custom Properties — dark mode overrides
+ *   3.  CSS Reset
+ *   4.  Base Element Styles (typography, headings, links)
+ *   5.  Button Component (.btn, .btn--primary, etc.)
+ *   6.  FormField / Input Component
+ *   7.  Auth Page Layout
+ *   8.  Dashboard Layout & Sidebar
+ *   9.  Kanban Board (columns, cards, drag states)
+ *   10. Task Card Priority Borders
+ *   11. Drawer (slide animation, overlay, body)
+ *   12. Toast Notifications
+ *   13. Loading & Error States
+ *   14. Dark Mode Toggle Button
+ *   15. Responsive (mobile sidebar, drawer)
  */
 
-/* ─── 1. Design Tokens (CSS Custom Properties) ──────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 1. DESIGN TOKENS — Light Mode (default)
+ * ═══════════════════════════════════════════════════════════════════════════
  *
- * All colors, font sizes, and spacing live here as named variables.
- * Components never reference raw hex values — always a --variable.
- * Changing the entire look means editing only this section.
+ * These are the single source of truth for every color in the app.
+ * When we say "use the background color", components reference --color-bg.
+ * This means we change the entire app's theme by editing only this section.
  */
 :root {
-  /* Backgrounds */
+  /* ── Backgrounds ──────────────────────────────────────────────────────── */
   --color-bg: #ffffff;
-  --color-surface: #f9fafb;       /* Cards, inputs */
-  --color-surface-hover: #f3f4f6;
+  /* Main page background — pure white */
+  --color-surface: #f8fafc;
+  /* Elevated surface: sidebar, column headers */
+  --color-surface-hover: #f1f5f9;
+  /* Hover state for surfaces */
+  --color-surface-active: #e2e8f0;
+  /* Active/pressed state */
 
-  /* Borders */
-  --color-border: #e5e7eb;
-  --color-border-focus: #6b7280;
+  /* ── Borders ──────────────────────────────────────────────────────────── */
+  --color-border: #e2e8f0;
+  /* Default border — visible but not loud */
+  --color-border-strong: #cbd5e1;
+  /* Stronger border for cards (Day 7 fix: was too light) */
+  --color-border-focus: #94a3b8;
+  /* Border color on focus */
+  --color-border-accent: #2563eb;
+  /* Blue border for active/selected states */
 
-  /* Text — three hierarchy levels */
-  --color-text: #111827;          /* Primary — almost black */
-  --color-text-muted: #6b7280;    /* Secondary — labels, placeholders */
-  --color-text-subtle: #9ca3af;   /* Tertiary — hints, footnotes */
+  /* ── Text — Three hierarchy levels ───────────────────────────────────── */
+  --color-text: #0f172a;
+  /* Primary — near black (not pure #000) */
+  --color-text-muted: #64748b;
+  /* Secondary — labels, helper text */
+  --color-text-subtle: #94a3b8;
+  /* Tertiary — placeholders, timestamps */
 
-  /* Accent — ONE color, two shades */
+  /* ── Accent — One blue, used for CTAs and interactive highlights ──────── */
   --color-accent: #2563eb;
+  /* Blue 600 */
   --color-accent-hover: #1d4ed8;
-  --color-accent-light: #eff6ff;
+  /* Blue 700 (darker on hover) */
+  --color-accent-muted: #dbeafe;
+  /* Blue 100 (light blue tint for backgrounds) */
 
-  /* Status */
+  /* ── Status Colors ────────────────────────────────────────────────────── */
   --color-error: #dc2626;
   --color-error-bg: #fef2f2;
   --color-error-border: #fecaca;
   --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+  --color-success-border: #bbf7d0;
+  --color-warning: #d97706;
+  --color-warning-bg: #fffbeb;
 
-  /* Typography */
+  /* ── Priority Colors (for task card left-border indicators) ───────────── */
+  --priority-low: #22c55e;
+  /* Green 500 */
+  --priority-medium: #eab308;
+  /* Yellow 500 */
+  --priority-high: #f97316;
+  /* Orange 500 */
+  --priority-critical: #ef4444;
+  /* Red 500 */
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-size-xs:   0.75rem;
-  --font-size-sm:   0.875rem;
+  --font-size-xs: 0.75rem;
+  /* 12px */
+  --font-size-sm: 0.875rem;
+  /* 14px */
   --font-size-base: 1rem;
-  --font-size-lg:   1.125rem;
-  --font-size-xl:   1.25rem;
-  --font-size-2xl:  1.5rem;
-  --font-size-3xl:  1.875rem;
+  /* 16px */
+  --font-size-md: 1rem;
+  /* alias for base */
+  --font-size-lg: 1.125rem;
+  /* 18px */
+  --font-size-xl: 1.25rem;
+  /* 20px */
+  --font-size-2xl: 1.5rem;
+  /* 24px */
+  --font-size-3xl: 1.875rem;
+  /* 30px */
 
-  /* Spacing scale */
-  --space-1:  0.25rem;
-  --space-2:  0.5rem;
-  --space-3:  0.75rem;
-  --space-4:  1rem;
-  --space-5:  1.25rem;
-  --space-6:  1.5rem;
-  --space-8:  2rem;
+  /* ── Spacing Scale ────────────────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  /* 4px  */
+  --space-2: 0.5rem;
+  /* 8px  */
+  --space-3: 0.75rem;
+  /* 12px */
+  --space-4: 1rem;
+  /* 16px */
+  --space-5: 1.25rem;
+  /* 20px */
+  --space-6: 1.5rem;
+  /* 24px */
+  --space-8: 2rem;
+  /* 32px */
   --space-10: 2.5rem;
+  /* 40px */
   --space-12: 3rem;
+  /* 48px */
 
-  /* Shape */
+  /* ── Shape ────────────────────────────────────────────────────────────── */
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
 
-  /* Shadows — used sparingly */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  /* ── Shadows ──────────────────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.09), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+  --shadow-overlay: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.08);
 
-  /* Transitions */
-  --transition-fast: 120ms ease;
+  /* ── Transitions ──────────────────────────────────────────────────────── */
+  --transition-fast: 100ms ease;
   --transition-base: 180ms ease;
+  --transition-medium: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Aliases for backward compatibility */
+  --color-background: var(--color-bg);
+  --color-background-alt: var(--color-surface);
+  --color-primary: var(--color-accent);
 }
 
-/* ─── 2. CSS Reset ───────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 2. DARK MODE OVERRIDES
+ * ═══════════════════════════════════════════════════════════════════════════
  *
- * Minimal reset — removes browser inconsistencies without being opinionated.
+ * ThemeProvider.js sets `data-theme="dark"` on <html>.
+ * Every variable defined here OVERRIDES the :root values above.
+ * Components don't change at all — they just read different values.
+ *
+ * Color palette inspiration: GitHub Dark, Linear Dark, Vercel Dark
  */
-*, *::before, *::after {
+[data-theme="dark"] {
+  /* ── Backgrounds ──────────────────────────────────────────────────────── */
+  --color-bg: #0d1117;
+  /* GitHub dark — deep navy black */
+  --color-surface: #161b22;
+  /* Slightly elevated surface */
+  --color-surface-hover: #1f2937;
+  /* Hover state */
+  --color-surface-active: #273344;
+  /* Active/pressed state */
+
+  /* ── Borders — Lighter than surfaces for visibility ───────────────────── */
+  --color-border: #21262d;
+  /* Subtle border — visible against dark bg */
+  --color-border-strong: #30363d;
+  /* Stronger border for card separation */
+  --color-border-focus: #58a6ff;
+  /* Blue focus ring (accessible in dark) */
+  --color-border-accent: #58a6ff;
+  /* Blue 400 — lighter for dark bg visibility */
+
+  /* ── Text — Light on dark ─────────────────────────────────────────────── */
+  --color-text: #e6edf3;
+  /* Near-white primary text */
+  --color-text-muted: #8b949e;
+  /* Muted gray for secondary content */
+  --color-text-subtle: #6e7681;
+  /* Subtle text for hints/placeholders */
+
+  /* ── Accent — Lighter blue for dark backgrounds ───────────────────────── */
+  --color-accent: #58a6ff;
+  /* Blue 400 — visible on dark bg */
+  --color-accent-hover: #79c0ff;
+  /* Lighter on hover */
+  --color-accent-muted: #0d2d6e;
+  /* Dark blue tint for accent backgrounds */
+
+  /* ── Status Colors (adjusted for dark) ───────────────────────────────── */
+  --color-error: #f85149;
+  --color-error-bg: #1a0a0a;
+  --color-error-border: #6e1a1a;
+  --color-success: #3fb950;
+  --color-success-bg: #051a0a;
+  --color-success-border: #1a4d1a;
+  --color-warning: #d29922;
+  --color-warning-bg: #1a1200;
+
+  /* ── Priority Colors (same hue, slightly adjusted lightness) ──────────── */
+  --priority-low: #3fb950;
+  --priority-medium: #d29922;
+  --priority-high: #f0883e;
+  --priority-critical: #f85149;
+
+  /* ── Shadows (darker for dark mode) ──────────────────────────────────── */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.45), 0 2px 4px -2px rgb(0 0 0 / 0.35);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-overlay: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 3. CSS RESET
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -111,11 +257,17 @@ body {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Smooth the background color transition when switching themes */
+  transition: background-color var(--transition-medium), color var(--transition-medium);
 }
 
-ul, ol { list-style: none; }
+ul,
+ol {
+  list-style: none;
+}
 
-img, video {
+img,
+video {
   max-width: 100%;
   height: auto;
   display: block;
@@ -129,7 +281,9 @@ button {
   font-size: inherit;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
   font-family: inherit;
   font-size: inherit;
 }
@@ -139,23 +293,7 @@ a {
   text-decoration: none;
 }
 
-/* ─── 3. Base Element Styles ─────────────────────────────────────────────────*/
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--color-text);
-}
-
-h1 { font-size: var(--font-size-3xl); }
-h2 { font-size: var(--font-size-2xl); }
-h3 { font-size: var(--font-size-xl); }
-
-p {
-  color: var(--color-text-muted);
-  line-height: 1.65;
-}
-
-/* Accessibility: visually hidden but readable by screen readers */
+/* Accessibility: hide visually but keep available for screen readers */
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -168,36 +306,77 @@ p {
   border-width: 0;
 }
 
-/* ─── 4. Button Component ─────────────────────────────────────────────────────
- *
- * Three variants: primary, secondary, ghost
- * Loading state: spinner + label dimming
- * Full-width modifier: btn--full
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 4. BASE ELEMENT STYLES
+ * ═══════════════════════════════════════════════════════════════════════════
  */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+  /* Text smoothly changes color on theme switch */
+  transition: color var(--transition-medium);
+}
 
+h1 {
+  font-size: var(--font-size-3xl);
+}
+
+h2 {
+  font-size: var(--font-size-2xl);
+}
+
+h3 {
+  font-size: var(--font-size-xl);
+}
+
+p {
+  color: var(--color-text-muted);
+  line-height: 1.65;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 5. BUTTON COMPONENT
+ * Three variants: --primary (filled), --secondary (outlined), --ghost
+ * Loading state: isLoading prop adds spinner
+ * Full-width modifier: .btn--full
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: 0.625rem var(--space-4);   /* 10px 16px — compact but not cramped */
+  padding: 0.5625rem var(--space-4);
+  /* 9px 16px */
   font-size: var(--font-size-sm);
   font-weight: 500;
   border-radius: var(--radius-md);
   transition: background-color var(--transition-fast),
-              border-color var(--transition-fast),
-              color var(--transition-fast),
-              opacity var(--transition-fast);
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
   line-height: 1.5;
   white-space: nowrap;
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-/* Primary — filled blue, for CTAs */
+.btn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Primary — filled blue, the main call-to-action */
 .btn--primary {
   background-color: var(--color-accent);
   color: #ffffff;
@@ -209,11 +388,11 @@ p {
   border-color: var(--color-accent-hover);
 }
 
-/* Secondary — outlined */
+/* Secondary — outlined, for secondary actions */
 .btn--secondary {
   background-color: transparent;
   color: var(--color-text);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
 }
 
 .btn--secondary:hover:not(:disabled) {
@@ -221,23 +400,24 @@ p {
   border-color: var(--color-border-focus);
 }
 
-/* Ghost — no background or border, for OAuth/social buttons */
+/* Ghost — minimal, for less prominent actions */
 .btn--ghost {
   background-color: transparent;
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
 }
 
 .btn--ghost:hover:not(:disabled) {
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-border);
 }
 
-/* Full-width modifier */
 .btn--full {
   width: 100%;
 }
 
-/* Loading spinner */
+/* Loading spinner inside button */
 .btn__spinner {
   display: inline-block;
   width: 14px;
@@ -254,18 +434,15 @@ p {
 }
 
 @keyframes btn-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* ─── 5. FormField / Input Component ─────────────────────────────────────────
- *
- * .form-field        — wrapper div
- * .form-field__label — the <label>
- * .form-field__hint  — optional hint text beneath the label
- * .form-field__input — the <input>
- * .form-field__error — the inline error message
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 6. FORM FIELD / INPUT COMPONENT
+ * ═══════════════════════════════════════════════════════════════════════════
  */
-
 .form-field {
   display: flex;
   flex-direction: column;
@@ -278,21 +455,29 @@ p {
   color: var(--color-text);
 }
 
+/* Optional hint text below the label */
 .form-field__hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-subtle);
-  margin-top: calc(-1 * var(--space-1));
+  margin-top: 2px;
+}
+
+.required-star {
+  color: var(--color-error);
+  margin-left: 2px;
 }
 
 .form-field__input {
   width: 100%;
-  padding: 0.625rem var(--space-3);   /* 10px 12px */
-  border: 1px solid var(--color-border);
+  padding: 0.5625rem var(--space-3);
+  border: 1.5px solid var(--color-border-strong);
+  /* 1.5px — more visible than 1px */
   border-radius: var(--radius-md);
   background-color: var(--color-bg);
   color: var(--color-text);
   font-size: var(--font-size-sm);
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-fast),
+    background-color var(--transition-medium);
   outline: none;
 }
 
@@ -301,7 +486,15 @@ p {
 }
 
 .form-field__input:focus {
-  border-color: var(--color-border-focus);
+  border-color: var(--color-border-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+.form-field__input:disabled {
+  background-color: var(--color-surface);
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .form-field__input--error {
@@ -318,8 +511,10 @@ p {
   margin-top: var(--space-1);
 }
 
-/* ─── 6. Auth Page Layout (full-screen, no side panel) ─────────────────────*/
-
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 7. AUTH PAGE LAYOUT
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 .auth-page {
   min-height: 100vh;
   display: flex;
@@ -327,7 +522,6 @@ p {
   background-color: var(--color-bg);
 }
 
-/* Minimal top bar with logo */
 .auth-page__header {
   padding: var(--space-5) var(--space-8);
   border-bottom: 1px solid var(--color-border);
@@ -345,7 +539,6 @@ p {
   color: var(--color-accent);
 }
 
-/* Vertically + horizontally centered content area */
 .auth-page__main {
   flex: 1;
   display: flex;
@@ -354,16 +547,15 @@ p {
   padding: var(--space-10) var(--space-5);
 }
 
-/* ─── Legacy split-panel (unused now) ────────────────────────────────*/
+/* Legacy split-panel (auth pages) */
 .auth-layout {
   display: flex;
   min-height: 100vh;
 }
 
-/* Left: dark brand panel */
 .auth-layout__brand {
   flex: 0 0 42%;
-  background-color: #0f172a; /* Slate 900 */
+  background-color: #0f172a;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -379,12 +571,12 @@ p {
 }
 
 .auth-layout__brand-logo span {
-  color: #60a5fa; /* Blue 400 — lighter for dark bg */
+  color: #60a5fa;
 }
 
 .auth-layout__brand-tagline {
   font-size: var(--font-size-lg);
-  color: #94a3b8; /* Slate 400 */
+  color: #94a3b8;
   line-height: 1.65;
   max-width: 300px;
   margin-bottom: var(--space-10);
@@ -400,7 +592,7 @@ p {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  color: #cbd5e1; /* Slate 300 */
+  color: #cbd5e1;
   font-size: var(--font-size-sm);
   line-height: 1.5;
 }
@@ -409,10 +601,8 @@ p {
   color: #60a5fa;
   flex-shrink: 0;
   margin-top: 2px;
-  font-size: var(--font-size-base);
 }
 
-/* Right: form panel */
 .auth-layout__form-panel {
   flex: 1;
   display: flex;
@@ -423,17 +613,12 @@ p {
   background-color: var(--color-bg);
 }
 
-/* The form card */
 .auth-form-card {
   width: 100%;
   max-width: 440px;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-}
-
-.auth-form-card__header {
-  /* spacing handled by parent gap */
 }
 
 .auth-form-card__title {
@@ -458,7 +643,6 @@ p {
   text-decoration: underline;
 }
 
-/* Footer divider below the form — used for register/login switch link */
 .auth-form-card__footer {
   padding-top: var(--space-5);
   margin-top: var(--space-2);
@@ -466,14 +650,12 @@ p {
   text-align: center;
 }
 
-/* The form itself */
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
 }
 
-/* "or" divider between form and OAuth button */
 .auth-divider {
   display: flex;
   align-items: center;
@@ -496,7 +678,6 @@ p {
   white-space: nowrap;
 }
 
-/* API error message shown at the top of the form */
 .auth-api-error {
   background-color: var(--color-error-bg);
   border: 1px solid var(--color-error-border);
@@ -504,21 +685,17 @@ p {
   padding: var(--space-3) var(--space-4);
   font-size: var(--font-size-sm);
   color: var(--color-error);
-  line-height: 1.5;
 }
 
-/* Success banner — shown after registration redirect */
 .auth-success-banner {
-  background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background-color: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
   font-size: var(--font-size-sm);
   color: var(--color-success);
-  line-height: 1.5;
 }
 
-/* OAuth notice about credential setup */
 .auth-oauth-notice {
   font-size: var(--font-size-xs);
   color: var(--color-text-subtle);
@@ -526,23 +703,10 @@ p {
   margin-top: var(--space-2);
 }
 
-/* ─── Responsive ─────────────────────────────────────────────────────────────*/
-@media (max-width: 767px) {
-  .auth-layout__brand {
-    display: none; /* Form is all that matters on mobile */
-  }
-
-  .auth-layout__form-panel {
-    padding: var(--space-8) var(--space-5);
-  }
-
-  .auth-form-card__title {
-    font-size: var(--font-size-xl);
-  }
-}
-
-/* ─── 8. Dashboard Layout & Sidebar ────────────────────────────────────────── */
-
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 8. DASHBOARD LAYOUT & SIDEBAR
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 .dashboard-layout {
   display: flex;
   height: 100vh;
@@ -551,13 +715,17 @@ p {
   background-color: var(--color-background);
 }
 
+/* Sidebar — fixed width panel on the left */
 .dashboard-sidebar {
   width: 260px;
   background-color: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  border-right: 1.5px solid var(--color-border-strong);
+  /* Stronger border: Day 7 fix */
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  transition: background-color var(--transition-medium),
+    border-color var(--transition-medium);
 }
 
 .dashboard-sidebar__header {
@@ -568,17 +736,20 @@ p {
   border-bottom: 1px solid var(--color-border);
 }
 
+/* OmniFlow's "logo mark" — a small blue square */
 .logo-placeholder {
   width: 24px;
   height: 24px;
   background-color: var(--color-primary);
   border-radius: var(--radius-sm);
+  flex-shrink: 0;
 }
 
 .brand-text {
-  font-weight: 600;
+  font-weight: 700;
   font-size: var(--font-size-md);
   color: var(--color-text);
+  letter-spacing: -0.02em;
 }
 
 .dashboard-sidebar__nav {
@@ -589,6 +760,7 @@ p {
   gap: var(--space-1);
 }
 
+/* Navigation link item */
 .nav-item {
   display: flex;
   align-items: center;
@@ -598,7 +770,8 @@ p {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .nav-item:hover {
@@ -606,20 +779,36 @@ p {
   color: var(--color-text);
 }
 
+.nav-item--active {
+  background-color: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.nav-item__icon {
+  flex-shrink: 0;
+  font-size: var(--font-size-md);
+}
+
+/* Sidebar footer: user info + theme toggle + logout */
 .dashboard-sidebar__footer {
   padding: var(--space-4);
   border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
+/* User profile row */
 .user-profile {
   display: flex;
   align-items: center;
   gap: var(--space-3);
 }
 
+/* Avatar circle */
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -627,10 +816,12 @@ p {
   font-weight: 600;
   font-size: var(--font-size-sm);
   color: white;
+  flex-shrink: 0;
 }
 
 .avatar--default {
-  background-color: var(--color-text-muted);
+  /* Blue in light mode, darker blue in dark mode */
+  background-color: var(--color-accent);
 }
 
 .user-info {
@@ -656,12 +847,14 @@ p {
   overflow: hidden;
 }
 
+/* Main content area */
 .dashboard-main {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: var(--color-background-alt);
+  background-color: var(--color-surface);
+  transition: background-color var(--transition-medium);
 }
 
 .dashboard-content {
@@ -679,10 +872,12 @@ p {
 
 .dashboard-header__title {
   font-size: var(--font-size-2xl);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text);
+  letter-spacing: -0.02em;
 }
 
+/* Board card grid */
 .boards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -690,22 +885,25 @@ p {
 }
 
 .board-card {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  border: 1.5px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
   display: block;
 }
 
 .board-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-2px);
+  border-color: var(--color-border-accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  /* subtle lift on hover */
 }
 
 .board-card__color {
-  height: 8px;
+  height: 6px;
   width: 100%;
 }
 
@@ -715,7 +913,8 @@ p {
 
 .board-card__title {
   font-size: var(--font-size-md);
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--color-text);
   margin-bottom: var(--space-1);
 }
 
@@ -724,8 +923,29 @@ p {
   color: var(--color-text-muted);
 }
 
-/* ─── 9. Kanban Board UI ───────────────────────────────────────────────────── */
+/* Sidebar logout button */
+.sidebar-logout-btn {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  text-align: left;
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast);
+}
 
+.sidebar-logout-btn:hover {
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 9. KANBAN BOARD
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/* Board page layout: header bar + scrollable board */
 .board-page {
   display: flex;
   flex-direction: column;
@@ -733,13 +953,17 @@ p {
   overflow: hidden;
 }
 
+/* Top header bar */
 .board-header {
-  padding: var(--space-5) var(--space-8);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1.5px solid var(--color-border-strong);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
+  flex-shrink: 0;
+  transition: background-color var(--transition-medium),
+    border-color var(--transition-medium);
 }
 
 .board-header__left {
@@ -750,137 +974,681 @@ p {
 
 .board-title {
   font-size: var(--font-size-xl);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .board-member-count {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  background-color: var(--color-background-alt);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-weight: 500;
 }
 
 .board-header__right {
   display: flex;
   gap: var(--space-3);
+  align-items: center;
 }
 
+/* Horizontal scrollable row of columns */
 .kanban-board {
   flex: 1;
   display: flex;
   gap: var(--space-5);
-  padding: var(--space-6) var(--space-8);
+  padding: var(--space-6) var(--space-6);
   overflow-x: auto;
   overflow-y: hidden;
-  background-color: var(--color-background-alt);
+  background-color: var(--color-surface);
+  transition: background-color var(--transition-medium);
 }
 
+/* Scrollbar styling for the kanban board */
+.kanban-board::-webkit-scrollbar {
+  height: 6px;
+}
+
+.kanban-board::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kanban-board::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-strong);
+  border-radius: var(--radius-full);
+}
+
+.kanban-board::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-border-focus);
+}
+
+/* Individual column */
 .kanban-column {
-  width: 320px;
+  width: 300px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border-strong);
+  /* 1.5px: Day 7 visibility fix */
   max-height: 100%;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
+/*
+ * Active drop zone state — when a card is dragged over this column.
+ * Uses a blue accent border + tinted background to give clear visual feedback.
+ * Much more visible than the previous gray-only approach.
+ */
 .column-is-over {
-  background-color: #f8fafc;
+  border-color: var(--color-border-accent) !important;
+  background-color: var(--color-accent-muted);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 20%, transparent);
 }
 
+/* Column header */
 .column-header {
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4);
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--color-border);
+  /* Slightly darker background to distinguish header from card area */
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .column-title {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text);
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
 }
 
 .task-count {
   font-size: var(--font-size-xs);
-  background-color: var(--color-background-alt);
+  background-color: var(--color-surface-hover);
   color: var(--color-text-muted);
-  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  padding: 1px 8px;
   border-radius: var(--radius-full);
+  font-weight: 600;
 }
 
+/* Scrollable card list inside column */
 .column-body {
   flex: 1;
   padding: var(--space-3);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 10. TASK CARD + PRIORITY LEFT-BORDER
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Each card has a colored left border indicating priority level.
+ * Set via `data-priority` attribute on the card element.
+ * No JavaScript conditionals needed — pure CSS attribute selectors.
+ */
+
 .kanban-task-card {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  border: 1.5px solid var(--color-border-strong);
+  border-left-width: 3px;
+  /* The left border will be overridden by priority color */
+  border-left-color: var(--color-border-strong);
+  /* default: no priority */
   border-radius: var(--radius-md);
   padding: var(--space-3);
-  cursor: grab;
-  user-select: none;
-  box-shadow: var(--shadow-sm);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-medium);
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
 }
 
 .kanban-task-card:hover {
-  border-color: var(--color-text-muted);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-sm);
 }
 
-.kanban-task-card.dragging {
+/* Priority left-border colors — set via [data-priority] attribute */
+.kanban-task-card[data-priority="low"] {
+  border-left-color: var(--priority-low);
+}
+
+.kanban-task-card[data-priority="medium"] {
+  border-left-color: var(--priority-medium);
+}
+
+.kanban-task-card[data-priority="high"] {
+  border-left-color: var(--priority-high);
+}
+
+.kanban-task-card[data-priority="critical"] {
+  border-left-color: var(--priority-critical);
+}
+
+/*
+ * Ghost placeholder — the original card position while dragging.
+ * Make it mostly transparent so users see the empty space.
+ */
+.kanban-task-card.is-dragging {
+  opacity: 0.3;
+  border-style: dashed;
+}
+
+/*
+ * The floating overlay card that follows the cursor.
+ * Elevated appearance with a larger shadow.
+ */
+.kanban-task-card.is-overlay {
+  opacity: 1;
+  box-shadow: var(--shadow-overlay);
   cursor: grabbing;
-  box-shadow: var(--shadow-md);
-  border-color: var(--color-primary);
+  transform: rotate(2deg);
+  /* Slight tilt to show it's "picked up" */
+}
+
+/* Drag handle — the ⠿ icon on the left of each card */
+.task-drag-handle {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-base);
+  padding: 2px var(--space-1);
+  cursor: grab;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.task-drag-handle:hover {
+  color: var(--color-text-muted);
+  background-color: var(--color-surface-hover);
+}
+
+.task-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Clickable body area of the card (opens drawer) */
+.task-card-body {
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+  /* Prevents text overflow from stretching the card */
+}
+
+.task-card-body:focus-visible {
+  outline: 2px solid var(--color-border-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .task-title {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+  line-height: 1.4;
+  /* Clamp to 3 lines max — prevents very long titles from dominating */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
+/* Metadata row (priority badge, AI badge, description indicator) */
 .task-meta {
   display: flex;
   gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
 }
 
+/* Base badge style */
 .badge {
   font-size: var(--font-size-xs);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+/* Priority badges — use the priority variable colors for text */
+.badge--priority.badge--low {
+  color: var(--priority-low);
+  border-color: var(--priority-low);
+}
+
+.badge--priority.badge--medium {
+  color: var(--priority-medium);
+  border-color: var(--priority-medium);
+}
+
+.badge--priority.badge--high {
+  color: var(--priority-high);
+  border-color: var(--priority-high);
+}
+
+.badge--priority.badge--critical {
+  color: var(--priority-critical);
+  border-color: var(--priority-critical);
+}
+
+.badge--ai {
+  color: var(--color-accent);
+  border-color: var(--color-accent-muted);
+}
+
+.badge--muted {
+  border-color: transparent;
+  background-color: transparent;
+}
+
+/* "Add Task" button at bottom of each column */
+.btn-add-task-col {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-subtle);
+  text-align: left;
+  border-radius: var(--radius-md);
+  border: 1.5px dashed transparent;
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.btn-add-task-col:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 11. DRAWER — Slide-in panel from the right
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * HOW THE ANIMATION WORKS:
+ *   The drawer is ALWAYS in the DOM (we removed the `return null` pattern).
+ *   When `data-open="false"`:
+ *     - overlay: opacity 0, pointer-events none, visibility hidden
+ *     - drawer-content: translateX(100%) — off screen to the right
+ *   When `data-open="true"`:
+ *     - overlay: opacity 1, pointer-events all, visibility visible
+ *     - drawer-content: translateX(0) — slides into view
+ *   CSS `transition` makes this smooth.
+ */
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgb(0 0 0 / 0);
+  /* Start transparent */
+  z-index: 900;
+  display: flex;
+  justify-content: flex-end;
+  /* Transition the overlay background fade */
+  transition: background-color var(--transition-medium),
+    visibility var(--transition-medium);
+  /* Hidden when closed — can't be clicked or tab-focused */
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* OPEN state — triggered by data-open="true" from Drawer.js */
+.drawer-overlay[data-open="true"] {
+  background-color: rgb(0 0 0 / 0.4);
+  /* Semi-transparent black scrim */
+  visibility: visible;
+  pointer-events: all;
+}
+
+/* The actual panel */
+.drawer-content {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  background-color: var(--color-bg);
+  border-left: 1.5px solid var(--color-border-strong);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-overlay);
+  /* Start off-screen to the right */
+  transform: translateX(100%);
+  /* Smooth slide animation */
+  transition: transform var(--transition-medium),
+    background-color var(--transition-medium);
+}
+
+/* Slide in when overlay is open */
+.drawer-overlay[data-open="true"] .drawer-content {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1.5px solid var(--color-border-strong);
+  flex-shrink: 0;
+}
+
+.drawer-title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.drawer-close-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.drawer-close-btn:hover {
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6);
+}
+
+/* Form inside the drawer */
+.task-drawer-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Two-column layout for priority + column selectors */
+.drawer-sidebar-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+/* Footer with Cancel + Save buttons */
+.drawer-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.textarea-field {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Danger action (delete task) — text-only red link style */
+.btn-danger-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.btn-danger-text:hover {
+  background-color: var(--color-error-bg);
+}
+
+.btn-danger-text:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 12. TOAST NOTIFICATIONS
+ * Slide up from bottom-right, auto-dismissed by Zustand after 3s
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+.toast-container {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  z-index: 1000;
+  max-width: 380px;
+}
+
+/* Individual toast */
+.toast-message {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-bg);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  box-shadow: var(--shadow-lg);
+  /* Slide up animation when toast appears */
+  animation: toast-slide-in 0.25s cubic-bezier(0.18, 0.67, 0.6, 1.22) both;
+  transition: background-color var(--transition-medium);
+}
+
+/* Success toast — green border + text */
+.toast--success {
+  border-color: var(--color-success-border);
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+/* Error toast — red border + text */
+.toast--error {
+  border-color: var(--color-error-border);
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+/* Info toast — uses default styling */
+.toast--info {
+  color: var(--color-text);
+}
+
+/* Icon on the left of each toast (✓ / ✕ / ℹ) */
+.toast-icon {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+/* Toast message text — takes up all remaining space */
+.toast-text {
+  flex: 1;
+  color: inherit;
+  line-height: 1.4;
+}
+
+.toast-close {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-base);
+  line-height: 1;
+  padding: 0 var(--space-1);
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+
+.toast-close:hover {
+  color: var(--color-text);
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 13. LOADING & ERROR STATES
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+.board-loading,
+.board-error,
+.dashboard-loading,
+.dashboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-12);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  height: 100%;
+}
+
+.board-error h2 {
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+}
+
+/* Spinning loader for the auth check */
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border-strong);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: btn-spin 0.8s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 14. DARK MODE TOGGLE BUTTON
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast);
+  text-align: left;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.theme-toggle-icon {
+  font-size: var(--font-size-base);
+  line-height: 1;
+}
+
+.theme-toggle-label {
   font-weight: 500;
 }
 
-.priority-high, .priority-critical {
-  background-color: #fee2e2;
-  color: #dc2626;
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 15. RESPONSIVE BREAKPOINTS
+ * Mobile: sidebar hidden, drawer full-width, reduced padding
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+@media (max-width: 767px) {
 
-.priority-medium {
-  background-color: #fef3c7;
-  color: #d97706;
-}
+  /* Sidebar collapses on mobile */
+  .dashboard-sidebar {
+    display: none;
+  }
 
-.priority-low {
-  background-color: #f3f4f6;
-  color: #4b5563;
-}
+  /* Reduce padding on smaller screens */
+  .dashboard-content,
+  .board-header,
+  .kanban-board {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
 
-.ai-badge {
-  background-color: #e0e7ff;
-  color: #4338ca;
+  .board-header {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .board-header__right {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  /* Narrower columns on mobile */
+  .kanban-column {
+    width: 260px;
+  }
+
+  /* Full-width drawer on mobile */
+  .drawer-content {
+    max-width: 100%;
+  }
+
+  /* Stack priority + column side by side → each full width */
+  .drawer-sidebar-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Toast goes edge-to-edge on small screens */
+  .toast-container {
+    left: var(--space-4);
+    right: var(--space-4);
+    max-width: none;
+  }
+
+  /* Auth layout: hide brand panel, show form only */
+  .auth-layout__brand {
+    display: none;
+  }
+
+  .auth-layout__form-panel {
+    padding: var(--space-8) var(--space-5);
+  }
+
+  .auth-form-card__title {
+    font-size: var(--font-size-xl);
+  }
 }

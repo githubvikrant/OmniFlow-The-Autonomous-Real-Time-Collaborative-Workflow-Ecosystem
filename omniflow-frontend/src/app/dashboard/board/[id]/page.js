@@ -1,15 +1,29 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useBoardStore } from '@/store/boardStore';
+import { useToastStore } from '@/store/toastStore';
+import api from '@/lib/axios';
 import BoardView from '@/components/board/BoardView';
 import Button from '@/components/ui/Button';
-import api from '@/lib/axios';
+import TaskDetailDrawer from '@/components/board/TaskDetailDrawer';
 
 export default function BoardPage() {
   const { id } = useParams();
-  const { activeBoard, isLoading, error, fetchBoardData, clearBoard } = useBoardStore();
+  const router = useRouter();
+  const { addToast } = useToastStore();
+  
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [boardTitle, setBoardTitle] = useState('');
+  const activeBoard = useBoardStore((state) => state.activeBoard);
+  const isLoading = useBoardStore((state) => state.isLoading);
+  const error = useBoardStore((state) => state.error);
+  const fetchBoardData = useBoardStore((state) => state.fetchBoardData);
+  const clearBoard = useBoardStore((state) => state.clearBoard);
+  const taskDrawer = useBoardStore((state) => state.taskDrawer);
+  const openTaskDrawer = useBoardStore((state) => state.openTaskDrawer);
+  const closeTaskDrawer = useBoardStore((state) => state.closeTaskDrawer);
 
   useEffect(() => {
     if (id) {
@@ -17,6 +31,42 @@ export default function BoardPage() {
     }
     return () => clearBoard();
   }, [id, fetchBoardData, clearBoard]);
+
+  useEffect(() => {
+    if (activeBoard) {
+      setBoardTitle(activeBoard.name);
+    }
+  }, [activeBoard]);
+
+  const handleRenameSubmit = async () => {
+    setIsEditingTitle(false);
+    const newName = boardTitle.trim();
+    if (!newName || newName === activeBoard?.name) {
+      setBoardTitle(activeBoard?.name || '');
+      return;
+    }
+    try {
+      await api.patch(`/boards/${activeBoard._id}`, { name: newName });
+      addToast('Board renamed', 'success');
+      fetchBoardData(activeBoard._id);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to rename board', 'error');
+      setBoardTitle(activeBoard?.name || '');
+    }
+  };
+
+  const handleDeleteBoard = async () => {
+    if (!window.confirm(`Are you sure you want to delete "${activeBoard?.name}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await api.delete(`/boards/${activeBoard._id}`);
+      addToast('Board deleted successfully', 'success');
+      router.push('/dashboard');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to delete board', 'error');
+    }
+  };
 
   if (isLoading) {
     return <div className="board-loading">Loading Board...</div>;
@@ -35,31 +85,62 @@ export default function BoardPage() {
     <div className="board-page">
       <header className="board-header">
         <div className="board-header__left">
-          <h1 className="board-title">{activeBoard?.name}</h1>
+          {isEditingTitle ? (
+            <input
+              type="text"
+              autoFocus
+              className="board-title-input"
+              value={boardTitle}
+              onChange={(e) => setBoardTitle(e.target.value)}
+              onBlur={handleRenameSubmit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRenameSubmit();
+                if (e.key === 'Escape') {
+                  setBoardTitle(activeBoard?.name || '');
+                  setIsEditingTitle(false);
+                }
+              }}
+              style={{ fontSize: '1.5rem', fontWeight: 'bold', padding: '0.25rem', border: '1px solid var(--color-border-strong)', borderRadius: '4px', background: 'transparent', color: 'inherit' }}
+            />
+          ) : (
+            <h1 
+              className="board-title" 
+              onClick={() => setIsEditingTitle(true)}
+              style={{ cursor: 'text' }}
+              title="Click to rename"
+            >
+              {activeBoard?.name}
+            </h1>
+          )}
           <span className="board-member-count">
             {activeBoard?.memberCount} Member{activeBoard?.memberCount !== 1 ? 's' : ''}
           </span>
         </div>
         <div className="board-header__right">
-          <Button variant="secondary" onClick={async () => {
-            try {
-              await api.post('/tasks', {
-                board: activeBoard._id,
-                title: 'Test Task ' + Math.floor(Math.random() * 1000),
-                column: 'To Do',
-                priority: 'medium'
-              });
-              fetchBoardData(activeBoard._id);
-            } catch (err) {
-              console.error('Failed to create task', err);
-            }
-          }}>+ Add Dummy Task</Button>
+          <button 
+            type="button" 
+            className="btn-danger-text" 
+            onClick={handleDeleteBoard}
+            style={{ marginRight: '1rem' }}
+          >
+            Delete Board
+          </button>
+          <Button variant="secondary" onClick={() => openTaskDrawer()}>
+            + Add Task
+          </Button>
           <Button variant="secondary">Share</Button>
           <Button variant="primary">✨ AI Generate</Button>
         </div>
       </header>
 
       <BoardView board={activeBoard} />
+
+      <TaskDetailDrawer 
+        isOpen={taskDrawer.isOpen}
+        onClose={closeTaskDrawer}
+        task={taskDrawer.task}
+        targetColumn={taskDrawer.targetColumn}
+      />
     </div>
   );
 }
