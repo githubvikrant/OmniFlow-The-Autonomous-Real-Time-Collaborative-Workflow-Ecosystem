@@ -29,6 +29,21 @@
  *   Without it, the dragged card disappears from its original position
  *   and just shows a ghost. The DragOverlay renders a floating "clone"
  *   of the card that follows the cursor smoothly.
+ *
+ * DAY 8 — SOCKET.IO INTEGRATION:
+ *   On mount, we call socketStore.connect(boardId) which:
+ *     1. Opens the WebSocket connection
+ *     2. Joins the `board:<boardId>` room
+ *     3. Registers handlers for task:created/updated/moved/deleted
+ *     4. Starts tracking presence (who's on the board)
+ *   On unmount, socketStore.disconnect() cleans up everything.
+ *
+ *   X-Socket-ID Axios header (set in this file's useEffect):
+ *     When the socket connects, we store socket.id in socketStore.
+ *     We add an Axios request interceptor here that attaches
+ *     X-Socket-ID: <socketId> to every outgoing API request.
+ *     The backend uses this to exclude the actor from receiving
+ *     their own socket events (prevents double-applying optimistic updates).
  */
 'use client';
 
@@ -47,10 +62,13 @@ import {
   arrayMove,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Column from './Column';
 import TaskCard from './TaskCard';
+import PresenceAvatars from './PresenceAvatars'; // ← Day 8
 import { useBoardStore } from '@/store/boardStore';
+import { useSocketStore } from '@/store/socketStore';  // ← Day 8
+import api from '@/lib/axios';                          // ← Day 8 (for X-Socket-ID interceptor)
 
 /**
  * Custom collision detection strategy.
@@ -76,8 +94,42 @@ export default function BoardView({ board }) {
   const tasks = useBoardStore((state) => state.tasks);
   const moveTask = useBoardStore((state) => state.moveTask);
 
+  // Day 8: Connect to the board's Socket.IO room when BoardView mounts
+  const connectSocket = useSocketStore((state) => state.connect);
+  const disconnectSocket = useSocketStore((state) => state.disconnect);
+  const socketId = useSocketStore((state) => state.socketId);
+
   // activeTask: the task currently being dragged (for DragOverlay rendering)
   const [activeTask, setActiveTask] = useState(null);
+
+  // ─── Day 8: Socket.IO lifecycle ────────────────────────────────────────────
+  // Connect when BoardView mounts (user enters a board page).
+  // Disconnect when BoardView unmounts (user navigates away).
+  // The dependency array [board._id] ensures we reconnect if the board changes
+  // (e.g., user switches boards via sidebar without a full page reload).
+  useEffect(() => {
+    if (!board?._id) return;
+    connectSocket(board._id);
+    return () => disconnectSocket();
+  }, [board?._id, connectSocket, disconnectSocket]);
+
+  // ─── Day 8: X-Socket-ID Axios interceptor ──────────────────────────────────
+  // Inject the socket ID into every outgoing API request as a header.
+  // The backend reads X-Socket-ID and excludes that socket from receiving
+  // the echo of its own actions (preventing double optimistic updates).
+  //
+  // We add the interceptor inside useEffect so it picks up the socketId
+  // from state (which is set asynchronously when the socket connects).
+  useEffect(() => {
+    const interceptorId = api.interceptors.request.use((config) => {
+      if (socketId) {
+        config.headers['X-Socket-ID'] = socketId;
+      }
+      return config;
+    });
+    // Clean up the interceptor when this component unmounts or socketId changes
+    return () => api.interceptors.request.eject(interceptorId);
+  }, [socketId]);
 
   // Configure two input sensors for the DnD engine
   const sensors = useSensors(
@@ -181,37 +233,44 @@ export default function BoardView({ board }) {
   if (!board || !board.columns) return null;
 
   return (
-    <DndContext
-      sensors={sensors}
-      // Our custom strategy that correctly handles both cards and empty columns
-      collisionDetection={customCollisionDetection}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      {/* The horizontal scrollable row of columns */}
-      <div className="kanban-board">
-        {board.columns.map(col => {
-          // Pass only the tasks belonging to this column, sorted by order
-          const colTasks = tasks
-            .filter(t => t.column === col)
-            .sort((a, b) => a.order - b.order);
-          return <Column key={col} title={col} tasks={colTasks} />;
-        })}
+    <>
+      {/* Day 8: Presence bar — shows who else is on the board */}
+      <div className="board-header-bar">
+        <PresenceAvatars />
       </div>
 
-      {/*
-       * DragOverlay: Renders a floating "clone" of the card being dragged.
-       * This follows the cursor and looks elevated (via CSS shadow on .dragging class).
-       * Without this, dnd-kit would only show a ghosted placeholder.
-       */}
-      <DragOverlay dropAnimation={{
-        duration: 200,
-        easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-      }}>
-        {activeTask ? (
-          <TaskCard task={activeTask} isOverlay />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+      <DndContext
+        sensors={sensors}
+        // Our custom strategy that correctly handles both cards and empty columns
+        collisionDetection={customCollisionDetection}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        {/* The horizontal scrollable row of columns */}
+        <div className="kanban-board">
+          {board.columns.map(col => {
+            // Pass only the tasks belonging to this column, sorted by order
+            const colTasks = tasks
+              .filter(t => t.column === col)
+              .sort((a, b) => a.order - b.order);
+            return <Column key={col} title={col} tasks={colTasks} />;
+          })}
+        </div>
+
+        {/*
+         * DragOverlay: Renders a floating "clone" of the card being dragged.
+         * This follows the cursor and looks elevated (via CSS shadow on .dragging class).
+         * Without this, dnd-kit would only show a ghosted placeholder.
+         */}
+        <DragOverlay dropAnimation={{
+          duration: 200,
+          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+        }}>
+          {activeTask ? (
+            <TaskCard task={activeTask} isOverlay />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </>
   );
 }

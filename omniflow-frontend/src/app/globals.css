@@ -1652,3 +1652,155 @@ p {
     font-size: var(--font-size-xl);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 16. DAY 8 — REAL-TIME PRESENCE AVATARS
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * The presence bar shows overlapping circular avatars for every user
+ * currently viewing the same Kanban board.
+ *
+ * Design pattern: overlapping avatar stack (used by Figma, Notion, Linear)
+ *   - Avatars overlap via negative margin-left on each after the first
+ *   - z-index stacks them with leftmost on top
+ *   - Each avatar shows initials (colored by name hash) or a real avatar image
+ *
+ * Animation:
+ *   - The pulsing green dot (presence-dot) uses a CSS keyframe animation
+ *   - Avatars have a scale-in entrance animation when they first appear
+ */
+
+/* Board header bar — sits above the kanban columns */
+.board-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: var(--space-2) var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  flex-shrink: 0;
+  min-height: 44px;
+  transition: background-color var(--transition-medium);
+}
+
+/* The full presence component container */
+.presence-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* "Live" indicator with pulsing dot */
+.presence-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.presence-live-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: #22c55e;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* The pulsing green dot */
+.presence-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  /* Continuously pulse to indicate active connection */
+  animation: presence-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes presence-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
+  }
+}
+
+/* The row of overlapping avatar circles */
+.presence-avatars-stack {
+  display: flex;
+  align-items: center;
+}
+
+/* Individual avatar circle */
+.presence-avatar {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg);
+  /* White ring separates overlapping avatars — appears as outline */
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: default;
+  transition: transform var(--transition-fast), z-index 0s;
+  /* Entrance animation — avatar pops in when a user joins */
+  animation: avatar-pop-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes avatar-pop-in {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.presence-avatar:hover {
+  /* Slight lift so the hovered avatar rises above its neighbours */
+  transform: translateY(-2px) scale(1.1) !important;
+  z-index: 100 !important;
+}
+
+/* Avatar image */
+.presence-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Initials fallback — shown when there's no avatar image */
+.presence-initials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  border-radius: 50%;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+/* +N overflow badge — shown when more than MAX_VISIBLE users are present */
+.presence-overflow {
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
