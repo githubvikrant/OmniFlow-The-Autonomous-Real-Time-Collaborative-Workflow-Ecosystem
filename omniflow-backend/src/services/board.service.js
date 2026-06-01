@@ -1,4 +1,5 @@
 import Board from '../models/board.model.js';
+import User from '../models/user.model.js';
 import AppError from '../utils/AppError.js';
 
 /**
@@ -211,6 +212,56 @@ class BoardService {
     await board.save();
 
     return null;
+  }
+
+  // ─── MEMBERS ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Add a new member to the board by email.
+   *
+   * @param {string} boardId - The board's MongoDB ObjectId
+   * @param {string} userId - The authenticated user's ID
+   * @param {string} email - The email address of the user to invite
+   * @param {string} role - The role to assign (default: 'member')
+   */
+  async addMember(boardId, userId, email, role = 'member') {
+    const board = await Board.findById(boardId);
+
+    if (!board) {
+      throw new AppError('Board not found', 404);
+    }
+
+    const isOwner = board.owner.toString() === userId.toString();
+    const member = board.members.find(
+      (m) => m.user.toString() === userId.toString()
+    );
+    const isAdminMember = member && member.role === 'admin';
+
+    if (!isOwner && !isAdminMember) {
+      throw new AppError('Only the board owner or admins can add members', 403);
+    }
+
+    const newUser = await User.findOne({ email: email.toLowerCase() });
+    if (!newUser) {
+      throw new AppError('User not found with that email address', 404);
+    }
+
+    if (board.owner.toString() === newUser._id.toString()) {
+      throw new AppError('This user is already the owner of the board', 400);
+    }
+
+    const isAlreadyMember = board.members.some(
+      (m) => m.user.toString() === newUser._id.toString()
+    );
+    if (isAlreadyMember) {
+      throw new AppError('User is already a member of this board', 400);
+    }
+
+    board.members.push({ user: newUser._id, role });
+    await board.save();
+
+    // Return the updated populated board
+    return this.getBoardById(boardId, userId);
   }
 }
 

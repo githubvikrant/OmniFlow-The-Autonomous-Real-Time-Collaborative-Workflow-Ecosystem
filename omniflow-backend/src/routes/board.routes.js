@@ -5,6 +5,7 @@ import {
   getBoard,
   updateBoard,
   deleteBoard,
+  addMember,
 } from '../controllers/board.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -44,5 +45,8 @@ router
   .get(getBoard)       // Get a specific board
   .patch(updateBoard)  // Update board details
   .delete(deleteBoard); // Soft-delete (archive) a board
+
+// Route to add a member to a board
+router.post('/:id/members', addMember);
 
 export default router;

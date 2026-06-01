@@ -8,6 +8,7 @@ import api from '@/lib/axios';
 import BoardView from '@/components/board/BoardView';
 import Button from '@/components/ui/Button';
 import TaskDetailDrawer from '@/components/board/TaskDetailDrawer';
+import ShareModal from '@/components/board/ShareModal';
 
 export default function BoardPage() {
   const { id } = useParams();
@@ -16,6 +17,7 @@ export default function BoardPage() {
   
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [boardTitle, setBoardTitle] = useState('');
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const activeBoard = useBoardStore((state) => state.activeBoard);
   const isLoading = useBoardStore((state) => state.isLoading);
   const error = useBoardStore((state) => state.error);
@@ -128,7 +130,7 @@ export default function BoardPage() {
           <Button variant="secondary" onClick={() => openTaskDrawer()}>
             + Add Task
           </Button>
-          <Button variant="secondary">Share</Button>
+          <Button variant="secondary" onClick={() => setIsShareModalOpen(true)}>Share</Button>
           <Button variant="primary">✨ AI Generate</Button>
         </div>
       </header>
@@ -140,6 +142,12 @@ export default function BoardPage() {
         onClose={closeTaskDrawer}
         task={taskDrawer.task}
         targetColumn={taskDrawer.targetColumn}
+      />
+
+      <ShareModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        boardId={activeBoard?._id} 
       />
     </div>
   );

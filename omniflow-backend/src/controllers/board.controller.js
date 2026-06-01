@@ -92,3 +92,17 @@ export const deleteBoard = catchAsync(async (req, res) => {
   await boardService.deleteBoard(req.params.id, req.user._id);
   res.status(204).send(); // 204 No Content — no body allowed
 });
+
+// ─── POST /api/v1/boards/:id/members ──────────────────────────────────────────
+/**
+ * Add a new member to the board by email.
+ * Only the board owner or an admin member may add members.
+ * Returns 200 with the updated board document.
+ */
+export const addMember = catchAsync(async (req, res) => {
+  const board = await boardService.addMember(req.params.id, req.user._id, req.body.email, req.body.role);
+  res.status(200).json({
+    status: 'success',
+    data: { board },
+  });
+});
