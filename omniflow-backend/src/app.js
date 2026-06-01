@@ -16,9 +16,7 @@ app.use(helmet());
 
 // CORS — Allow requests from our Next.js frontend (port 3000 in dev)
 app.use(cors({
-  origin: config.isProduction
-    ? 'https://omniflow.yourdomain.com'
-    : 'http://localhost:3000',
+  origin: config.frontend.url,
   credentials: true,   // Allow cookies (needed for HttpOnly refresh token)
 }));
 

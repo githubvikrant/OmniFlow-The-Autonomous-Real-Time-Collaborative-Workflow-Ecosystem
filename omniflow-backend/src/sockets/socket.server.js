@@ -122,9 +122,7 @@ export function initSocketServer(httpServer) {
   const io = new Server(httpServer, {
     // CORS — allow our Next.js frontend to connect
     cors: {
-      origin: config.isProduction
-        ? 'https://omniflow.yourdomain.com'
-        : 'http://localhost:3000',
+      origin: config.frontend.url,
       methods: ['GET', 'POST'],
       credentials: true,
     },
