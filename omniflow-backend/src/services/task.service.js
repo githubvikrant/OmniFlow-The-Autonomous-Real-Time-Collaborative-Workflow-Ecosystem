@@ -1,6 +1,7 @@
 import Task from '../models/task.model.js';
 import Board from '../models/board.model.js';
 import AppError from '../utils/AppError.js';
+import cloudinary from '../config/cloudinary.js';
 
 /**
  * TASK SERVICE — Pure business logic. No req/res objects here.
@@ -113,6 +114,18 @@ class TaskService {
     });
 
     return task;
+  }
+
+  /**
+   * Bulk create tasks sequentially to avoid order collision.
+   */
+  async bulkCreateTasks(userId, boardId, tasksData) {
+    const createdTasks = [];
+    for (const data of tasksData) {
+      const task = await this.createTask(userId, boardId, data);
+      createdTasks.push(task);
+    }
+    return createdTasks;
   }
 
   // ─── READ (LIST) ──────────────────────────────────────────────────────────────
@@ -373,6 +386,64 @@ class TaskService {
     await task.save();
 
     return null;
+  }
+
+  // ─── ATTACHMENTS ──────────────────────────────────────────────────────────────
+
+  /**
+   * Add a new attachment to a task.
+   */
+  async addAttachment(taskId, userId, fileData) {
+    const task = await Task.findById(taskId);
+    if (!task) {
+      throw new AppError('Task not found', 404);
+    }
+    
+    await this._checkBoardAccess(task.board, userId);
+
+    task.attachments.push({
+      ...fileData,
+      uploadedBy: userId,
+    });
+
+    await task.save();
+    return this.getTaskById(taskId, userId);
+  }
+
+  /**
+   * Delete an attachment from a task and Cloudinary.
+   */
+  async deleteAttachment(taskId, attachmentId, userId) {
+    const task = await Task.findById(taskId);
+    if (!task) {
+      throw new AppError('Task not found', 404);
+    }
+
+    await this._checkBoardAccess(task.board, userId);
+
+    const attachmentIndex = task.attachments.findIndex(
+      (a) => a._id.toString() === attachmentId.toString()
+    );
+
+    if (attachmentIndex === -1) {
+      throw new AppError('Attachment not found', 404);
+    }
+
+    const attachment = task.attachments[attachmentIndex];
+
+    // Remove from Cloudinary if it has a publicId
+    if (attachment.publicId) {
+      try {
+        await cloudinary.uploader.destroy(attachment.publicId);
+      } catch (err) {
+        console.error('Failed to delete from Cloudinary:', err);
+      }
+    }
+
+    task.attachments.splice(attachmentIndex, 1);
+    await task.save();
+
+    return this.getTaskById(taskId, userId);
   }
 }
 

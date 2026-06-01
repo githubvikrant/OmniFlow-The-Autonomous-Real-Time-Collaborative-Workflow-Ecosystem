@@ -60,8 +60,8 @@ const api = axios.create({
   // Without this, POST /auth/refresh-token won't receive the cookie.
   withCredentials: true,
 
-  // 10-second timeout — prevents requests hanging forever on slow connections
-  timeout: 10000,
+  // 30-second timeout — allows enough time for OpenAI/Gemini to respond
+  timeout: 30000,
 });
 
 // ─── State for refresh throttling ────────────────────────────────────────────

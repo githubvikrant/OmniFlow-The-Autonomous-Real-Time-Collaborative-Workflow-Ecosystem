@@ -182,12 +182,30 @@ export const useBoardStore = create((set, get) => ({
     set((state) => ({ tasks: [...state.tasks, task] }));
   },
 
+  addTasksLocally: (newTasks) => {
+    set((state) => ({ tasks: [...state.tasks, ...newTasks] }));
+  },
+
   updateTaskLocally: (taskId, updates) => {
-    set((state) => ({
-      tasks: state.tasks.map((t) => 
+    set((state) => {
+      const updatedTasks = state.tasks.map((t) => 
         (t.id === taskId || t._id === taskId) ? { ...t, ...updates } : t
-      )
-    }));
+      );
+      
+      // Also update the drawer's task if it's the one being edited
+      let newTaskDrawer = state.taskDrawer;
+      if (state.taskDrawer.task && (state.taskDrawer.task.id === taskId || state.taskDrawer.task._id === taskId)) {
+        newTaskDrawer = {
+          ...state.taskDrawer,
+          task: { ...state.taskDrawer.task, ...updates },
+        };
+      }
+
+      return {
+        tasks: updatedTasks,
+        taskDrawer: newTaskDrawer,
+      };
+    });
   },
 
   deleteTaskLocally: (taskId) => {

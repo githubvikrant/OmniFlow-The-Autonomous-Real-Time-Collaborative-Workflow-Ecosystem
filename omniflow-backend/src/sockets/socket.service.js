@@ -159,6 +159,27 @@ export function emitTaskDeleted(boardId, taskId, actorSocketId = null) {
   }
 }
 
+/**
+ * Broadcast that multiple tasks were generated and added at once.
+ * Clients call boardStore.addTasksLocally(tasks) on receipt.
+ *
+ * @param {string} boardId
+ * @param {Array} tasks - The newly created tasks
+ * @param {string} actorSocketId
+ */
+export function emitTasksBulkAdded(boardId, tasks, actorSocketId = null) {
+  const io = getIO();
+  if (!io) return;
+
+  const room = `board:${boardId}`;
+
+  if (actorSocketId) {
+    io.to(room).except(actorSocketId).emit('tasks:bulk-added', { tasks });
+  } else {
+    io.to(room).emit('tasks:bulk-added', { tasks });
+  }
+}
+
 // ─── PRESENCE EVENTS ──────────────────────────────────────────────────────────
 
 /**

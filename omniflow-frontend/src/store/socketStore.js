@@ -147,6 +147,12 @@ export const useSocketStore = create((set, get) => ({
         useBoardStore.getState().deleteTaskLocally(taskId);
         console.log('[Socket] task:deleted received for task:', taskId);
       },
+
+      onTasksBulkAdded: ({ tasks }) => {
+        // Another user (or an AI action) bulk added tasks
+        useBoardStore.getState().addTasksLocally(tasks);
+        console.log(`[Socket] tasks:bulk-added received for ${tasks.length} tasks`);
+      },
     };
 
     // ── 3. Register event listeners ───────────────────────────────────────────
@@ -158,6 +164,7 @@ export const useSocketStore = create((set, get) => ({
     socket.on('task:updated', handlers.onTaskUpdated);
     socket.on('task:moved', handlers.onTaskMoved);
     socket.on('task:deleted', handlers.onTaskDeleted);
+    socket.on('tasks:bulk-added', handlers.onTasksBulkAdded);
 
     // If already connected (e.g., navigating between boards), join room immediately
     if (socket.connected) {
@@ -199,6 +206,7 @@ export const useSocketStore = create((set, get) => ({
       socket.off('task:updated', _handlers.onTaskUpdated);
       socket.off('task:moved', _handlers.onTaskMoved);
       socket.off('task:deleted', _handlers.onTaskDeleted);
+      socket.off('tasks:bulk-added', _handlers.onTasksBulkAdded);
     }
 
     // Disconnect the socket

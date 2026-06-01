@@ -6,8 +6,12 @@ import {
   updateTask,
   moveTask,
   deleteTask,
+  addAttachment,
+  deleteAttachment,
+  generateTasks,
 } from '../controllers/task.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
+import upload from '../middlewares/upload.middleware.js';
 
 /**
  * TASK ROUTES — /api/v1/tasks
@@ -46,7 +50,13 @@ router.use(protect);
 // interpreting "move" as an :id parameter value.
 router.post('/:id/move', moveTask);
 
+// ─── Attachments ───
+router.post('/:id/attachments', upload.single('file'), addAttachment);
+router.delete('/:taskId/attachments/:attachmentId', deleteAttachment);
+
 // Collection-level routes: /api/v1/tasks
+router.post('/generate', generateTasks);
+
 router
   .route('/')
   .post(createTask)  // Create a task (board ID required in body)

@@ -9,6 +9,7 @@ import BoardView from '@/components/board/BoardView';
 import Button from '@/components/ui/Button';
 import TaskDetailDrawer from '@/components/board/TaskDetailDrawer';
 import ShareModal from '@/components/board/ShareModal';
+import AIGenerateModal from '@/components/board/AIGenerateModal';
 
 export default function BoardPage() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function BoardPage() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [boardTitle, setBoardTitle] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isAIGenerateModalOpen, setIsAIGenerateModalOpen] = useState(false);
   const activeBoard = useBoardStore((state) => state.activeBoard);
   const isLoading = useBoardStore((state) => state.isLoading);
   const error = useBoardStore((state) => state.error);
@@ -131,7 +133,7 @@ export default function BoardPage() {
             + Add Task
           </Button>
           <Button variant="secondary" onClick={() => setIsShareModalOpen(true)}>Share</Button>
-          <Button variant="primary">✨ AI Generate</Button>
+          <Button variant="primary" onClick={() => setIsAIGenerateModalOpen(true)}>✨ AI Generate</Button>
         </div>
       </header>
 
@@ -148,6 +150,11 @@ export default function BoardPage() {
         isOpen={isShareModalOpen} 
         onClose={() => setIsShareModalOpen(false)} 
         boardId={activeBoard?._id} 
+      />
+
+      <AIGenerateModal 
+        isOpen={isAIGenerateModalOpen} 
+        onClose={() => setIsAIGenerateModalOpen(false)} 
       />
     </div>
   );

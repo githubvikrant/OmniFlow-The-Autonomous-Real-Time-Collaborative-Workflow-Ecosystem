@@ -41,6 +41,7 @@
 import { useState, useEffect } from 'react';
 import Drawer from '../ui/Drawer';
 import Button from '../ui/Button';
+import TaskAttachments from './TaskAttachments';
 import api from '@/lib/axios';
 import { useBoardStore } from '@/store/boardStore';
 import { useToastStore } from '@/store/toastStore';
@@ -257,6 +258,11 @@ export default function TaskDetailDrawer({ isOpen, onClose, task, targetColumn }
             )}
           </div>
         </div>
+
+        {/* ─── Attachments (only in edit mode) ─────────────────────────────── */}
+        {!isCreateMode && (
+          <TaskAttachments task={task} />
+        )}
 
         {/* ─── Footer Actions ───────────────────────────────────────────────── */}
         <div className="drawer-footer">

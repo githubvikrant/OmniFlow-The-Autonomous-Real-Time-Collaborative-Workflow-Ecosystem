@@ -7,7 +7,9 @@ import {
   emitTaskUpdated,
   emitTaskMoved,
   emitTaskDeleted,
+  emitTasksBulkAdded,
 } from '../sockets/socket.service.js'; // ← Day 8: real-time broadcast helpers
+import aiService from '../services/ai.service.js';
 
 /**
  * TASK CONTROLLER — Handles HTTP request/response for task endpoints.
@@ -225,4 +227,92 @@ export const deleteTask = catchAsync(async (req, res) => {
   }
 
   res.status(204).send(); // 204 No Content — no body allowed
+});
+
+// ─── POST /api/v1/tasks/:id/attachments ───────────────────────────────────────
+/**
+ * Add a file attachment to a task via Cloudinary.
+ * The file is intercepted by the Multer middleware.
+ */
+export const addAttachment = catchAsync(async (req, res) => {
+  if (!req.file) {
+    throw new AppError('Please provide a file to upload.', 400);
+  }
+
+  const fileData = {
+    url: req.file.path,
+    publicId: req.file.filename,
+    fileName: req.file.originalname,
+    fileSize: req.file.size,
+    fileType: req.file.mimetype,
+  };
+
+  const task = await taskService.addAttachment(req.params.id, req.user._id, fileData);
+
+  // Broadcast the update to everyone else on the board
+  const boardId = task.board.toString();
+  const actorSocketId = req.headers['x-socket-id'] || null;
+  emitTaskUpdated(boardId, task, actorSocketId);
+
+  res.status(200).json({
+    status: 'success',
+    data: { task },
+  });
+});
+
+// ─── DELETE /api/v1/tasks/:taskId/attachments/:attachmentId ───────────────────
+/**
+ * Delete a file attachment from a task.
+ */
+export const deleteAttachment = catchAsync(async (req, res) => {
+  const task = await taskService.deleteAttachment(
+    req.params.taskId,
+    req.params.attachmentId,
+    req.user._id
+  );
+
+  // Broadcast the update to everyone else on the board
+  const boardId = task.board.toString();
+  const actorSocketId = req.headers['x-socket-id'] || null;
+  emitTaskUpdated(boardId, task, actorSocketId);
+
+  res.status(200).json({
+    status: 'success',
+    data: { task },
+  });
+});
+
+// ─── POST /api/v1/tasks/generate ──────────────────────────────────────────────
+/**
+ * Generate tasks using AI and bulk add them to the board.
+ */
+export const generateTasks = catchAsync(async (req, res) => {
+  const { board, prompt } = req.body;
+
+  if (!board) {
+    throw new AppError('board ID is required', 400);
+  }
+  if (!prompt) {
+    throw new AppError('prompt is required', 400);
+  }
+
+  // 1. Ask AI to generate tasks
+  const generatedTasksData = await aiService.generateTasks(prompt);
+
+  if (!generatedTasksData || generatedTasksData.length === 0) {
+    throw new AppError('AI failed to generate any tasks.', 500);
+  }
+
+  // 2. Bulk insert tasks to DB
+  const createdTasks = await taskService.bulkCreateTasks(req.user._id, board, generatedTasksData);
+
+  // 3. Broadcast to board
+  const actorSocketId = req.headers['x-socket-id'] || null;
+  emitTasksBulkAdded(board, createdTasks, actorSocketId);
+
+  res.status(201).json({
+    status: 'success',
+    results: createdTasks.length,
+    data: { tasks: createdTasks },
+  });
 });
