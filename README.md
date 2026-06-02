@@ -6,6 +6,9 @@ OmniFlow is a powerful, real-time Kanban project management tool built to rival 
 ![OmniFlow Interface](https://img.shields.io/badge/Status-Active_Development-success)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
+  
+## [Click here to see a live demo](https://omni-flow-the-autonomous-real-time.vercel.app/login)
+
 ## 🚀 Features
 
 - **Real-Time Collaboration:** Every drag, drop, and edit is synced instantly across all connected users via WebSockets.
@@ -47,59 +50,6 @@ git clone https://github.com/your-username/OmniFlow-The-Autonomous-Real-Time-Col
 cd OmniFlow-The-Autonomous-Real-Time-Collaborative-Workflow-Ecosystem
 ```
 
-### 2. Setup the Backend
-```bash
-cd omniflow-backend
-npm install
-```
-Create an `.env` file in the `omniflow-backend` directory:
-```env
-PORT=5000
-NODE_ENV=development
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_secret_key
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/v1/auth/google/callback
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# AI
-GEMINI_API_KEY=your_gemini_key
-
-# Frontend URL
-FRONTEND_URL=http://localhost:3000
-```
-Start the backend server:
-```bash
-npm run dev
-```
-
-### 3. Setup the Frontend
-Open a new terminal window:
-```bash
-cd omniflow-frontend
-npm install
-```
-Create an `.env.local` file in the `omniflow-frontend` directory:
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
-NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
-NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
-```
-Start the Next.js development server:
-```bash
-npm run dev
-```
-
-Visit `http://localhost:3000` in your browser to start using OmniFlow!
 
 ## 🐳 Docker Deployment
 
