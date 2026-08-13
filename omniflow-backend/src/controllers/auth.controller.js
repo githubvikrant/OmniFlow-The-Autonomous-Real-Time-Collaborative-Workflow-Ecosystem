@@ -121,6 +121,27 @@ export const changePassword = catchAsync(async (req, res) => {
  * If we used 'strict', the refresh token cookie would be dropped at the
  * final step. 'lax' allows the cookie to be sent with top-level navigations.
  */
+// ─── POST /api/v1/auth/forgot-password ──────────────────────────────────────
+export const forgotPassword = catchAsync(async (req, res) => {
+  const { email } = req.body;
+  const result = await AuthService.forgotPassword(email);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Password reset link generated. Please check server logs / email.',
+    data: result,
+  });
+});
+
+// ─── POST /api/v1/auth/reset-password/:token ────────────────────────────────
+export const resetPassword = catchAsync(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+  const user = await AuthService.resetPassword(token, password);
+
+  createAndSendTokens(user, 200, res);
+});
+
 export const googleCallback = (req, res) => {
   // req.user is set by passport — our full MongoDB User document
   const user = req.user;

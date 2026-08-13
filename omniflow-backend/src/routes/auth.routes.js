@@ -23,6 +23,8 @@ router.post('/register', validate(registerSchema), AuthController.register);
 router.post('/login', validate(loginSchema), AuthController.login);
 router.post('/logout', AuthController.logout);
 router.post('/refresh-token', AuthController.refreshToken);
+router.post('/forgot-password', AuthController.forgotPassword);
+router.post('/reset-password/:token', AuthController.resetPassword);
 
 /**
  * PROTECTED ROUTES — require a valid JWT (Bearer token in Authorization header)

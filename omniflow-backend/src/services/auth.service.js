@@ -1,6 +1,60 @@
 import User from '../models/user.model.js';
 import AppError from '../utils/AppError.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../utils/jwt.js';
+import crypto from 'crypto';
+
+// ─── FORGOT PASSWORD ────────────────────────────────────────────────────────
+/**
+ * Generate password reset token for user with given email.
+ */
+export const forgotPassword = async (email) => {
+  const normalizedEmail = email ? email.toLowerCase().trim() : '';
+  const user = await User.findOne({
+    $or: [
+      { email: normalizedEmail },
+      { email: new RegExp(`^${normalizedEmail}$`, 'i') },
+    ],
+  });
+  if (!user) {
+    throw new AppError('There is no user with that email address.', 404);
+  }
+
+  const resetToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+
+  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
+
+  console.log('🔑 PASSWORD RESET URL:', resetUrl);
+
+  return { resetToken, resetUrl };
+};
+
+// ─── RESET PASSWORD ─────────────────────────────────────────────────────────
+/**
+ * Reset password using valid, unexpired token.
+ */
+export const resetPassword = async (token, newPassword) => {
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new AppError('Token is invalid or has expired.', 400);
+  }
+
+  user.password = newPassword;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  return user;
+};
 
 /**
  * AUTH SERVICE — Pure business logic. No req/res objects here.
