@@ -11,17 +11,20 @@ export const sendEmail = async (options) => {
     // Production / Configured SMTP Transporter
     const cleanPass = process.env.EMAIL_PASS.replace(/\s+/g, '');
     const cleanUser = process.env.EMAIL_USER.trim();
+    const port = Number(process.env.EMAIL_PORT) || 465;
+    const isSecure = port === 465;
 
     transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST.trim(),
-      port: Number(process.env.EMAIL_PORT) || 587,
-      secure: Number(process.env.EMAIL_PORT) === 465,
+      port: port,
+      secure: isSecure, // Port 465 uses SSL direct connection
       auth: {
         user: cleanUser,
         pass: cleanPass,
       },
+      connectionTimeout: 10000,
       tls: {
-        rejectUnauthorized: false, // Cloud host SSL resilience (Render / Railway)
+        rejectUnauthorized: false,
       },
     });
   } else {
