@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
       <div className="auth-card__header">
         <h1 className="auth-card__title">Reset Password</h1>
         <p className="auth-card__subtitle">
-          Enter your registered email address and we will send you password reset instructions.
+          Enter your registered email address and we will send password reset instructions to your inbox.
         </p>
       </div>
 
@@ -42,10 +42,11 @@ export default function ForgotPasswordPage() {
           <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>✉️</div>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>Check Your Email</h3>
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
-            If an account exists for <strong>{email}</strong>, we have sent instructions to reset your password.
+            If an account exists for <strong>{email}</strong>, password reset instructions have been sent to your inbox.
           </p>
+
           <Link href="/login" className="btn btn--primary" style={{ width: '100%', textDecoration: 'none', display: 'inline-block' }}>
-            Return to Login
+            ← Return to Login
           </Link>
         </div>
       ) : (

@@ -1,11 +1,12 @@
 import User from '../models/user.model.js';
 import AppError from '../utils/AppError.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../utils/jwt.js';
+import { sendEmail } from '../utils/sendEmail.js';
 import crypto from 'crypto';
 
 // ─── FORGOT PASSWORD ────────────────────────────────────────────────────────
 /**
- * Generate password reset token for user with given email.
+ * Generate password reset token for user with given email and send via email.
  */
 export const forgotPassword = async (email) => {
   const normalizedEmail = email ? email.toLowerCase().trim() : '';
@@ -24,9 +25,34 @@ export const forgotPassword = async (email) => {
 
   const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
 
-  console.log('🔑 PASSWORD RESET URL:', resetUrl);
+  const message = `Forgot your password? Reset your password by clicking the link below:\n\n${resetUrl}\n\nThis reset link is valid for 10 minutes. If you did not request a password reset, please ignore this email.`;
 
-  return { resetToken, resetUrl };
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'OmniFlow Password Reset Instructions',
+      message,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #2563eb; margin-top: 0;">OmniFlow Password Reset</h2>
+          <p style="color: #475569;">You requested a password reset for your OmniFlow account (<strong>${user.email}</strong>).</p>
+          <p style="color: #475569;">Click the button below to reset your password. This link is valid for <strong>10 minutes</strong>:</p>
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${resetUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
+          </div>
+          <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 0;">If you did not request a password reset, please ignore this email.</p>
+        </div>
+      `,
+    });
+
+    return { success: true };
+  } catch (err) {
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    throw new AppError('There was an error sending the password reset email. Please try again later.', 500);
+  }
 };
 
 // ─── RESET PASSWORD ─────────────────────────────────────────────────────────
@@ -149,8 +175,8 @@ export const login = async (email, password) => {
     throw new AppError('Invalid email or password.', 401);
   }
 
-  if (!user.password && user.oauthProvider === 'google') {
-    throw new AppError('This account was created with Google Sign-In. Please log in using Google.', 400);
+  if (!user.password) {
+    throw new AppError('This account was created via Google Sign-In. Please click "Sign in with Google" or use "Forgot password?" to set a password.', 400);
   }
 
   if (!password || !(await user.comparePassword(password))) {
