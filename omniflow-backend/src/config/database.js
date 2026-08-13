@@ -1,5 +1,15 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
 import config from './index.js';
+
+// Set public DNS servers to resolve MongoDB Atlas SRV records on Windows networks
+try {
+    dns.setDefaultResultOrder('ipv4first');
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (err) {
+    // Ignore error if custom DNS cannot be set
+}
+
 
 const connectDB = async () => {
     try {

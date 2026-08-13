@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authRouter from './auth.routes.js';
 import boardRouter from './board.routes.js';   // Day 4
 import taskRouter from './task.routes.js';      // Day 4
+import adminRouter from './admin.routes.js';
 
 const router = Router();
 
@@ -9,6 +10,7 @@ const router = Router();
 router.use('/auth', authRouter);          // Day 3 ✅
 router.use('/boards', boardRouter);       // Day 4
 router.use('/tasks', taskRouter);         // Day 4
+router.use('/admin', adminRouter);
 
 // Base API health check — Phase 1 (Backend Foundation) complete ✅
 router.get('/', (req, res) => {
@@ -20,6 +22,7 @@ router.get('/', (req, res) => {
       auth: '/api/v1/auth',
       boards: '/api/v1/boards',
       tasks: '/api/v1/tasks',
+      admin: '/api/v1/admin',
     },
   });
 });
