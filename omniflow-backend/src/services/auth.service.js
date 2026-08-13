@@ -83,12 +83,14 @@ const createAndSendTokens = (user, statusCode, res) => {
   const accessToken = signAccessToken(user._id, user.role);
   const refreshToken = signRefreshToken(user._id);
 
+  const isProd = process.env.NODE_ENV === 'production';
+
   // Set refresh token as a secure, HttpOnly cookie
   res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,                            // JS cannot read this
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'strict',                        // CSRF protection
-    maxAge: 7 * 24 * 60 * 60 * 1000,         // 7 days in milliseconds
+    httpOnly: true,                                // JS cannot read this
+    secure: isProd,                                // HTTPS required for sameSite: 'none'
+    sameSite: isProd ? 'none' : 'lax',             // 'none' for cross-domain Vercel -> Render cookies
+    maxAge: 7 * 24 * 60 * 60 * 1000,             // 7 days in milliseconds
   });
 
   // Remove password from output

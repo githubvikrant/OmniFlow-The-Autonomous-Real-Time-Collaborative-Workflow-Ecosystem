@@ -155,7 +155,7 @@ export const googleCallback = (req, res) => {
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     secure: config.isProduction,
-    sameSite: 'lax',
+    sameSite: config.isProduction ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
   });
 
