@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';  // Installed on Day 3 — bcryptjs is the pure JS version
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema(
     {
@@ -127,6 +128,20 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
         return JWTTimestamp < changedTimestamp;  // true = password changed after JWT issued
     }
     return false;
+};
+
+// Generate password reset token (10 minutes validity)
+userSchema.methods.createPasswordResetToken = function () {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    this.passwordResetToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+
+    this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);

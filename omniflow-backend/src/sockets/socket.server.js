@@ -271,5 +271,24 @@ export function initSocketServer(httpServer) {
   });
 
   console.log('[Socket] ✅ Socket.IO server initialized');
+  ioInstance = io;
   return io;
+}
+
+let ioInstance = null;
+
+/**
+ * Get list of currently connected online user IDs
+ * @returns {Array<string>} Unique user IDs of connected sockets
+ */
+export function getOnlineUserIds() {
+  if (!ioInstance) return [];
+  const sockets = ioInstance.sockets.sockets;
+  const userIds = new Set();
+  for (const socket of sockets.values()) {
+    if (socket.user?.userId) {
+      userIds.add(socket.user.userId);
+    }
+  }
+  return Array.from(userIds);
 }
