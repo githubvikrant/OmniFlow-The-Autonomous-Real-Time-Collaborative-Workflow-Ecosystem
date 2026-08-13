@@ -82,6 +82,8 @@ function LoginForm() {
 
   // Show success banner when redirected from /register
   const justRegistered = searchParams.get('registered') === 'true';
+  // Show success banner when password was reset successfully
+  const resetSuccess = searchParams.get('reset') === 'success';
   // Show error banner when Google OAuth failed
   const oauthError = searchParams.get('error') === 'google_auth_failed';
 
@@ -131,6 +133,13 @@ function LoginForm() {
       {justRegistered && (
         <div className="auth-success-banner">
           ✓ Account created! Sign in below.
+        </div>
+      )}
+
+      {/* Success banner — shown after password reset */}
+      {resetSuccess && (
+        <div className="auth-success-banner">
+          ✓ Password reset successfully! Sign in with your new password below.
         </div>
       )}
 
@@ -189,6 +198,12 @@ function LoginForm() {
           error={errors.password}
           {...register('password')}
         />
+
+        <div style={{ textAlign: 'right', marginTop: '-8px', marginBottom: '16px' }}>
+          <Link href="/forgot-password" style={{ fontSize: '0.85rem', color: '#6366f1', textDecoration: 'none' }}>
+            Forgot password?
+          </Link>
+        </div>
 
         <Button
           id="btn-submit-login"

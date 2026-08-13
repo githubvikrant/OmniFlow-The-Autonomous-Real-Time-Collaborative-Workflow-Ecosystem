@@ -120,7 +120,12 @@ export default function DashboardLayout({ children }) {
             <span className="nav-item__icon" aria-hidden="true">❖</span>
             Boards
           </Link>
-          {/* Day 8+: Team, Notifications, Settings nav items will go here */}
+          {user?.role === 'admin' && (
+            <Link href="/admin" className="nav-item" style={{ color: '#818cf8', fontWeight: '600' }}>
+              <span className="nav-item__icon" aria-hidden="true">🛡️</span>
+              Admin Portal
+            </Link>
+          )}
         </nav>
 
         {/* Sidebar footer: user info + theme toggle + logout */}
