@@ -140,9 +140,18 @@ export const register = async (userData) => {
  * - We MUST explicitly include it here so we can call comparePassword().
  */
 export const login = async (email, password) => {
-  const user = await User.findOne({ email }).select('+password');
+  const cleanEmail = email ? email.toLowerCase().trim() : '';
+  const user = await User.findOne({ email: cleanEmail }).select('+password');
 
-  if (!user || !(await user.comparePassword(password))) {
+  if (!user) {
+    throw new AppError('Invalid email or password.', 401);
+  }
+
+  if (!user.password && user.oauthProvider === 'google') {
+    throw new AppError('This account was created with Google Sign-In. Please log in using Google.', 400);
+  }
+
+  if (!password || !(await user.comparePassword(password))) {
     throw new AppError('Invalid email or password.', 401);
   }
 
