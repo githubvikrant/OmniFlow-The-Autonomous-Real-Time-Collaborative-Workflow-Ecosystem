@@ -13,7 +13,6 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.4.0",
-    "@next/swc-win32-x64-msvc": "^16.3.0",
     "axios": "^1.16.1",
     "next": "14.2.3",
     "react": "^18",
