@@ -15,7 +15,7 @@ export const sendEmail = async (options) => {
         Authorization: `Bearer ${process.env.RESEND_API_KEY.trim()}`,
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'OmniFlow Support <onboarding@resend.dev>',
+        from: 'OmniFlow Support <onboarding@resend.dev>',
         to: [options.email],
         subject: options.subject,
         html: options.html,
