@@ -10,20 +10,24 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus({ loading: true, success: false, error: null });
+    setStatus({ loading: true, success: false, error: null, resetUrl: null });
 
     try {
-      await api.post('/auth/forgot-password', { email });
+      const res = await api.post('/auth/forgot-password', { email });
+      const resetUrl = res.data?.data?.resetUrl || null;
+
       setStatus({
         loading: false,
         success: true,
         error: null,
+        resetUrl,
       });
     } catch (err) {
       setStatus({
         loading: false,
         success: false,
         error: err.response?.data?.message || 'Failed to process request. Please try again.',
+        resetUrl: null,
       });
     }
   };
@@ -45,7 +49,22 @@ export default function ForgotPasswordPage() {
             If an account exists for <strong>{email}</strong>, password reset instructions have been sent to your inbox.
           </p>
 
-          <Link href="/login" className="btn btn--primary" style={{ width: '100%', textDecoration: 'none', display: 'inline-block' }}>
+          {status.resetUrl && (
+            <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '20px' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '12px' }}>
+                ⚙️ SMTP Email is not configured on server yet. Use this direct reset link:
+              </p>
+              <Link
+                href={status.resetUrl}
+                className="btn btn--primary"
+                style={{ width: '100%', textDecoration: 'none', display: 'inline-block' }}
+              >
+                ➡️ Set New Password Now
+              </Link>
+            </div>
+          )}
+
+          <Link href="/login" className="btn btn--secondary" style={{ width: '100%', textDecoration: 'none', display: 'inline-block' }}>
             ← Return to Login
           </Link>
         </div>

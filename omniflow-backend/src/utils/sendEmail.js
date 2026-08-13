@@ -9,13 +9,19 @@ export const sendEmail = async (options) => {
 
   if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     // Production / Configured SMTP Transporter
+    const cleanPass = process.env.EMAIL_PASS.replace(/\s+/g, '');
+    const cleanUser = process.env.EMAIL_USER.trim();
+
     transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
+      host: process.env.EMAIL_HOST.trim(),
       port: Number(process.env.EMAIL_PORT) || 587,
       secure: Number(process.env.EMAIL_PORT) === 465,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: cleanUser,
+        pass: cleanPass,
+      },
+      tls: {
+        rejectUnauthorized: false, // Cloud host SSL resilience (Render / Railway)
       },
     });
   } else {
