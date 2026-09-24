@@ -21,6 +21,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(auth)/layout.js"
     ],
+    "/auth/callback/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/auth/callback/page.js"
+    ],
     "/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -30,6 +35,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/layout.js"
+    ],
+    "/dashboard/board/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/dashboard/board/[id]/page.js"
     ],
     "/admin/page": [
       "static/chunks/webpack.js",
@@ -41,10 +51,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/admin/layout.js"
     ],
-    "/(auth)/forgot-password/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(auth)/forgot-password/page.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

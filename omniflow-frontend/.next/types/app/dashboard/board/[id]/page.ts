@@ -1,8 +1,8 @@
-// File: C:\Users\DELL\OneDrive\Documents\Programming\OmniFlow-The-Autonomous-Real-Time-Collaborative-Workflow-Ecosystem\omniflow-frontend\src\app\(auth)\forgot-password\page.js
-import * as entry from '../../../../../src/app/(auth)/forgot-password/page.js'
+// File: C:\Users\DELL\OneDrive\Documents\Programming\OmniFlow-The-Autonomous-Real-Time-Collaborative-Workflow-Ecosystem\omniflow-frontend\src\app\dashboard\board\[id]\page.js
+import * as entry from '../../../../../../src/app/dashboard/board/[id]/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
-type TEntry = typeof import('../../../../../src/app/(auth)/forgot-password/page.js')
+type TEntry = typeof import('../../../../../../src/app/dashboard/board/[id]/page.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{
