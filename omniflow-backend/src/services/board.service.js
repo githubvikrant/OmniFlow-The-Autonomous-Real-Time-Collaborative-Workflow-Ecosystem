@@ -105,10 +105,14 @@ class BoardService {
       throw new AppError('Board not found', 404);
     }
 
-    // Check authorization: must be owner or member
-    const isOwner = board.owner._id.toString() === userId.toString();
+    // Check authorization: must be owner or member.
+    // Guard against null owner/member.user — this can happen when a user document
+    // is deleted from the DB but their ObjectId reference still exists in board.members.
+    // In that case, .populate() resolves to null for that entry.
+    const ownerId = board.owner?._id ?? board.owner;
+    const isOwner = ownerId?.toString() === userId.toString();
     const isMember = board.members.some(
-      (m) => m.user._id.toString() === userId.toString()
+      (m) => m.user != null && m.user._id.toString() === userId.toString()
     );
 
     if (!isOwner && !isMember) {
